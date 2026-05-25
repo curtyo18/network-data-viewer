@@ -1,0 +1,12 @@
+{
+  "id": "00000000-0000-4000-8000-000000000003",
+  "name": "Celebrus",
+  "enabled": true,
+  "urlPattern": "celebrus",
+  "source": "reqBody",
+  "dsl": [
+    { "op": "json-parse" }
+  ],
+  "sandboxCode": "if (input && typeof input === 'object' && 'payload' in input) { try { const decoded = atob(input.payload); return { decoded, meta: input.meta }; } catch (e) { return { error: 'base64 decode failed', raw: input }; } } return input;",
+  "createdAt": 1737000000000
+}
