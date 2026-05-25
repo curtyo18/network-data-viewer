@@ -1,28 +1,11 @@
-import { useEffect, useState } from "react";
 import type { AnalyserConfig } from "@/shared/types";
+import { useAnalysers } from "@/side-panel/lib/use-analysers";
 
 export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | null) => void }) {
-  const [analysers, setAnalysers] = useState<AnalyserConfig[]>([]);
-
-  useEffect(() => {
-    const load = () => chrome.storage.local.get("analyserConfigs").then(r => setAnalysers((r.analyserConfigs as AnalyserConfig[] | undefined) ?? []));
-    load();
-    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
-      if (area === "local" && "analyserConfigs" in changes) {
-        setAnalysers((changes.analyserConfigs.newValue as AnalyserConfig[] | undefined) ?? []);
-      }
-    };
-    chrome.storage.onChanged.addListener(listener);
-    return () => chrome.storage.onChanged.removeListener(listener);
-  }, []);
+  const { analysers, setAnalysers, remove } = useAnalysers();
 
   async function toggle(id: string) {
-    const next = analysers.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a);
-    await chrome.storage.local.set({ analyserConfigs: next });
-  }
-  async function remove(id: string) {
-    const next = analysers.filter(a => a.id !== id);
-    await chrome.storage.local.set({ analyserConfigs: next });
+    await setAnalysers(analysers.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
   }
 
   return (

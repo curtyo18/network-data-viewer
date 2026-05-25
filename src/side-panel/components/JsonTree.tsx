@@ -18,7 +18,15 @@ function ObjectNode({ obj, depth, rootKey }: { obj: Record<string, unknown>; dep
   const entries = Object.entries(obj);
   return (
     <div>
-      <div style={pad} className="cursor-pointer select-none" onClick={() => setOpen(o => !o)}>
+      <div
+        style={pad}
+        className="cursor-pointer select-none focus:outline-none focus:bg-slate-800 focus:rounded"
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen(o => !o)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(o => !o); } }}
+        aria-expanded={open}
+      >
         {rootKey && <span className="text-amber-300">{rootKey}:</span>} <span className="text-slate-400">{open ? "▾" : "▸"} {`{${entries.length}}`}</span>
       </div>
       {open && entries.map(([k, v]) => <JsonTree key={k} value={v} depth={depth + 1} rootKey={k} />)}
@@ -31,7 +39,15 @@ function ArrayNode({ arr, depth, rootKey }: { arr: unknown[]; depth: number; roo
   const pad = { paddingLeft: `${depth * 12}px` };
   return (
     <div>
-      <div style={pad} className="cursor-pointer select-none" onClick={() => setOpen(o => !o)}>
+      <div
+        style={pad}
+        className="cursor-pointer select-none focus:outline-none focus:bg-slate-800 focus:rounded"
+        role="button"
+        tabIndex={0}
+        onClick={() => setOpen(o => !o)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(o => !o); } }}
+        aria-expanded={open}
+      >
         {rootKey && <span className="text-amber-300">{rootKey}:</span>} <span className="text-slate-400">{open ? "▾" : "▸"} {`[${arr.length}]`}</span>
       </div>
       {open && arr.map((v, i) => <JsonTree key={i} value={v} depth={depth + 1} rootKey={String(i)} />)}

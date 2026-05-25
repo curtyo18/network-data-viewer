@@ -1,3 +1,5 @@
+import { MSG } from "@/shared/messages";
+
 const INIT_TIMEOUT_MS = 2000;
 const RUN_TIMEOUT_MS = 2000;
 
@@ -26,17 +28,28 @@ function ensureIframe(analyserId: string, code: string): Promise<void> {
         }
         if (ev.data?.type === "init-error" && ev.data.analyserId === analyserId) {
           cleanup();
+          iframe.remove();
+          iframes.delete(analyserId);
+          ready.delete(analyserId);
           reject(new Error(ev.data.message));
         }
       };
       const timer = setTimeout(() => {
         cleanup();
+        iframe.remove();
+        iframes.delete(analyserId);
+        ready.delete(analyserId);
         reject(new Error("sandbox init timeout"));
       }, INIT_TIMEOUT_MS);
       window.addEventListener("message", handler);
       iframe.contentWindow!.postMessage({ type: "init", analyserId, code }, "*");
     };
-    iframe.onerror = () => reject(new Error("iframe load error"));
+    iframe.onerror = () => {
+      iframe.remove();
+      iframes.delete(analyserId);
+      ready.delete(analyserId);
+      reject(new Error("iframe load error"));
+    };
     document.body.appendChild(iframe);
     iframes.set(analyserId, iframe);
   });
@@ -54,22 +67,22 @@ function destroyIframe(analyserId: string): void {
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === "offscreen-create-iframe") {
+  if (msg?.type === MSG.OFFSCREEN_CREATE_IFRAME) {
     ensureIframe(msg.analyserId, msg.code)
       .then(() => sendResponse({ ok: true }))
       .catch(e => sendResponse({ ok: false, error: (e as Error).message }));
     return true;
   }
-  if (msg?.type === "offscreen-destroy-iframe") {
+  if (msg?.type === MSG.OFFSCREEN_DESTROY_IFRAME) {
     destroyIframe(msg.analyserId);
     sendResponse({ ok: true });
     return false;
   }
-  if (msg?.type === "offscreen-run-transform") {
+  if (msg?.type === MSG.OFFSCREEN_RUN_TRANSFORM) {
     const { analyserId, requestId, input } = msg;
     const iframe = iframes.get(analyserId);
     if (!iframe?.contentWindow) {
-      chrome.runtime.sendMessage({ type: "offscreen-result", requestId, payload: { error: "iframe missing" } });
+      chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RESULT, requestId, payload: { error: "iframe missing" } });
       return false;
     }
     let cleaned = false;
@@ -84,11 +97,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (ev.data?.type !== "result" || ev.data.requestId !== requestId) return;
       cleanup();
       const payload = "error" in ev.data ? { error: ev.data.error } : { result: ev.data.result };
-      chrome.runtime.sendMessage({ type: "offscreen-result", requestId, payload });
+      chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RESULT, requestId, payload });
     };
     const timer = setTimeout(() => {
       cleanup();
-      chrome.runtime.sendMessage({ type: "offscreen-result", requestId, payload: { error: "offscreen run timeout" } });
+      chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RESULT, requestId, payload: { error: "offscreen run timeout" } });
     }, RUN_TIMEOUT_MS);
     window.addEventListener("message", handler);
     iframe.contentWindow.postMessage({ type: "run", requestId, input }, "*");

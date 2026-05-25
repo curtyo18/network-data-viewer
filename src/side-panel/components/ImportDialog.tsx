@@ -1,19 +1,18 @@
 import { useState } from "react";
 import { decodeConfig } from "@/shared/share";
-import type { AnalyserConfig } from "@/shared/types";
+import { useAnalysers } from "@/side-panel/lib/use-analysers";
 
 export function ImportDialog({ onClose }: { onClose: () => void }) {
+  const { analysers, setAnalysers } = useAnalysers();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   async function doImport() {
     try {
       const incoming = decodeConfig(text.trim());
-      const r = await chrome.storage.local.get("analyserConfigs");
-      const existing = ((r.analyserConfigs as AnalyserConfig[] | undefined) ?? []);
-      const byId = new Map(existing.map(a => [a.id, a]));
+      const byId = new Map(analysers.map(a => [a.id, a]));
       for (const a of incoming) byId.set(a.id, a);
-      await chrome.storage.local.set({ analyserConfigs: Array.from(byId.values()) });
+      await setAnalysers(Array.from(byId.values()));
       onClose();
     } catch (e) {
       setError((e as Error).message);

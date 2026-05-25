@@ -9,8 +9,9 @@
 
   function clip(s: string | null): { body: string | null; truncated: boolean } {
     if (s === null) return { body: null, truncated: false };
-    if (s.length <= MAX_BODY) return { body: s, truncated: false };
-    return { body: s.slice(0, MAX_BODY), truncated: true };
+    const enc = new TextEncoder().encode(s);
+    if (enc.length <= MAX_BODY) return { body: s, truncated: false };
+    return { body: new TextDecoder("utf-8").decode(enc.slice(0, MAX_BODY)), truncated: true };
   }
 
   async function readReqBody(init: RequestInit | undefined, req: Request): Promise<string | null> {

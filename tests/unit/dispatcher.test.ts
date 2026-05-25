@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dispatch } from "@/background/dispatcher";
 import type { AnalyserConfig, CapturedEvent } from "@/shared/types";
 
@@ -13,7 +13,11 @@ const cfg = (over: Partial<AnalyserConfig>): AnalyserConfig => ({
   dsl: [{ op: "json-parse" }], createdAt: 0, ...over
 });
 
-const noSandbox = vi.fn(async () => ({ result: undefined as unknown }));
+let noSandbox: ReturnType<typeof vi.fn>;
+
+beforeEach(() => {
+  noSandbox = vi.fn(async () => ({ result: undefined as unknown }));
+});
 
 describe("dispatch", () => {
   it("returns [] when no analyser matches", async () => {

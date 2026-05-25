@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import type { AnalyserConfig, DslStep } from "@/shared/types";
+import { AnalyserConfigSchema } from "@/shared/schema";
+import { useAnalysers } from "@/side-panel/lib/use-analysers";
 
 const EMPTY: AnalyserConfig = {
   id: "", name: "", enabled: true, urlPattern: "", source: "reqBody",
@@ -7,10 +9,18 @@ const EMPTY: AnalyserConfig = {
 };
 
 export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | null; onClose: () => void }) {
+  const { upsert } = useAnalysers();
   const [cfg, setCfg] = useState<AnalyserConfig>(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
-  useEffect(() => { setCfg(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() }); }, [initial]);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setCfg(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
+    setError(null);
+  }, [initial]);
 
-  function update<K extends keyof AnalyserConfig>(k: K, v: AnalyserConfig[K]) { setCfg(prev => ({ ...prev, [k]: v })); }
+  function update<K extends keyof AnalyserConfig>(k: K, v: AnalyserConfig[K]) {
+    setError(null);
+    setCfg(prev => ({ ...prev, [k]: v }));
+  }
 
   function addStep(op: DslStep["op"]) {
     const step: DslStep =
@@ -26,10 +36,20 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
   }
 
   async function save() {
-    const r = await chrome.storage.local.get("analyserConfigs");
-    const list = ((r.analyserConfigs as AnalyserConfig[] | undefined) ?? []).filter(a => a.id !== cfg.id);
-    list.push(cfg);
-    await chrome.storage.local.set({ analyserConfigs: list });
+    try {
+      new RegExp(cfg.urlPattern);
+    } catch {
+      setError("invalid regex pattern");
+      return;
+    }
+
+    const validation = AnalyserConfigSchema.safeParse(cfg);
+    if (!validation.success) {
+      setError(validation.error.errors[0]?.message ?? "validation failed");
+      return;
+    }
+
+    await upsert(cfg);
     onClose();
   }
 
@@ -78,6 +98,7 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
         <label className="block text-slate-400">sandbox code (optional)</label>
         <textarea className="w-full h-24 bg-slate-900 border border-slate-700 px-2 py-1 rounded font-mono" value={cfg.sandboxCode ?? ""} onChange={e => update("sandboxCode", e.target.value || undefined)} placeholder="return input;" />
       </div>
+      {error && <div className="text-rose-400">{error}</div>}
       <div className="flex gap-2">
         <button className="px-3 py-1 bg-violet-700 rounded text-white" onClick={save}>Save</button>
         <button className="px-3 py-1 bg-slate-800 rounded text-slate-200" onClick={onClose}>Cancel</button>
