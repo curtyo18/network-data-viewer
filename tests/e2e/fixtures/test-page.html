@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <body>
+    <button id="fire-fetch">fire fetch</button>
+    <button id="fire-xhr">fire xhr</button>
+    <script>
+      document.getElementById("fire-fetch").addEventListener("click", () => {
+        fetch("https://www.google-analytics.com/g/collect?v=2&tid=G-TEST&cid=abc&dl=https%3A%2F%2Fexample.com&en=page_view", { method: "POST", body: "ep.page_title=Test" });
+      });
+      document.getElementById("fire-xhr").addEventListener("click", () => {
+        const x = new XMLHttpRequest();
+        x.open("POST", "/__test/analytics");
+        x.send(JSON.stringify({ hello: "world" }));
+      });
+    </script>
+  </body>
+</html>
