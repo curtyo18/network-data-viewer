@@ -10,31 +10,46 @@ const fixtureHtml = readFileSync(path.resolve(__dirname, "fixtures/test-page.htm
 test("captures fetch to GA4 and renders in side panel", async () => {
   const ctx = await launchWithExtension();
   try {
-    // Serve the fixture over HTTPS — content scripts don't run on file:// without
-    // an extension-specific opt-in that isn't available via launch flags.
     await ctx.route("**/test-fixture.local/**", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
     });
-    // Mock GA4 endpoint so the captured fetch doesn't depend on real network.
     await ctx.route("**/google-analytics.com/g/collect**", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const extId = await getExtensionId(ctx);
+    const sw = await getServiceWorker(ctx);
+    sw.on("console", (msg) => console.log("[sw]", msg.text()));
+    const extId = new URL(sw.url()).host;
 
-    // Open the side panel FIRST so its port is connected before events fire.
-    // Events are session-scoped and dropped when no port is attached.
+    // Explicit seed via SW context — removes the onInstalled timing variable.
+    await sw.evaluate(async () => {
+      await chrome.storage.local.set({
+        analyserConfigs: [{
+          id: "test-ga4",
+          name: "GA4",
+          enabled: true,
+          urlPattern: "google-analytics\\.com/g/collect",
+          source: "url",
+          dsl: [{ op: "query-parse" }],
+          createdAt: 0
+        }]
+      });
+    });
+
     const panel = await ctx.newPage();
+    panel.on("console", (msg) => console.log("[panel]", msg.text()));
+    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
     await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    // "Export all" button is unique to the panel header — proves React mounted.
     await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
+    // Give the port-connect handshake a moment to register on the SW.
+    await panel.waitForTimeout(500);
 
-    // Load fixture over HTTPS so the MAIN-world content script runs, then fire.
     const page = await ctx.newPage();
+    page.on("console", (msg) => console.log("[page]", msg.text()));
+    page.on("pageerror", (err) => console.log("[page error]", err.message));
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-fetch");
 
-    // Panel should render the captured event. GA4 appears in the analyser badge.
     await expect(panel.locator("text=GA4").first()).toBeVisible({ timeout: 10000 });
     await expect(panel.locator("text=G-TEST").first()).toBeVisible();
   } finally {
@@ -42,8 +57,8 @@ test("captures fetch to GA4 and renders in side panel", async () => {
   }
 });
 
-async function getExtensionId(ctx: import("@playwright/test").BrowserContext): Promise<string> {
+async function getServiceWorker(ctx: import("@playwright/test").BrowserContext) {
   let [sw] = ctx.serviceWorkers();
   if (!sw) sw = await ctx.waitForEvent("serviceworker", { timeout: 5000 });
-  return new URL(sw.url()).host;
+  return sw;
 }
