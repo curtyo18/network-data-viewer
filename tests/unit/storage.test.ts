@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Storage } from "@/background/storage";
+import { Storage } from "@/shared/storage";
 import type { AnalyserConfig } from "@/shared/types";
 
 const fakeStorage = (() => {

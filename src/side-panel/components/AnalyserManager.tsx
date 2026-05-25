@@ -1,29 +1,11 @@
-import { useEffect, useState } from "react";
 import type { AnalyserConfig } from "@/shared/types";
-import { STORAGE_KEY } from "@/shared/messages";
+import { useAnalysers } from "@/side-panel/lib/use-analysers";
 
 export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | null) => void }) {
-  const [analysers, setAnalysers] = useState<AnalyserConfig[]>([]);
-
-  useEffect(() => {
-    const load = () => chrome.storage.local.get(STORAGE_KEY).then(r => setAnalysers((r[STORAGE_KEY] as AnalyserConfig[] | undefined) ?? []));
-    load();
-    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
-      if (area === "local" && STORAGE_KEY in changes) {
-        setAnalysers((changes[STORAGE_KEY].newValue as AnalyserConfig[] | undefined) ?? []);
-      }
-    };
-    chrome.storage.onChanged.addListener(listener);
-    return () => chrome.storage.onChanged.removeListener(listener);
-  }, []);
+  const { analysers, setAnalysers, remove } = useAnalysers();
 
   async function toggle(id: string) {
-    const next = analysers.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a);
-    await chrome.storage.local.set({ [STORAGE_KEY]: next });
-  }
-  async function remove(id: string) {
-    const next = analysers.filter(a => a.id !== id);
-    await chrome.storage.local.set({ [STORAGE_KEY]: next });
+    await setAnalysers(analysers.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
   }
 
   return (

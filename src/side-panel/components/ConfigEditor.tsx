@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { AnalyserConfig, DslStep } from "@/shared/types";
-import { STORAGE_KEY } from "@/shared/messages";
 import { AnalyserConfigSchema } from "@/shared/schema";
+import { useAnalysers } from "@/side-panel/lib/use-analysers";
 
 const EMPTY: AnalyserConfig = {
   id: "", name: "", enabled: true, urlPattern: "", source: "reqBody",
@@ -9,6 +9,7 @@ const EMPTY: AnalyserConfig = {
 };
 
 export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | null; onClose: () => void }) {
+  const { upsert } = useAnalysers();
   const [cfg, setCfg] = useState<AnalyserConfig>(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -48,10 +49,7 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
       return;
     }
 
-    const r = await chrome.storage.local.get(STORAGE_KEY);
-    const list = ((r[STORAGE_KEY] as AnalyserConfig[] | undefined) ?? []).filter(a => a.id !== cfg.id);
-    list.push(cfg);
-    await chrome.storage.local.set({ [STORAGE_KEY]: list });
+    await upsert(cfg);
     onClose();
   }
 
