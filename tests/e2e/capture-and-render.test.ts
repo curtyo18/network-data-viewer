@@ -1,13 +1,25 @@
 import { test, expect } from "@playwright/test";
 import { launchWithExtension } from "./helpers";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const fixtureHtml = readFileSync(path.resolve(__dirname, "fixtures/test-page.html"), "utf-8");
 
 test("captures fetch to GA4 and renders in side panel", async () => {
   const ctx = await launchWithExtension();
   try {
+    // Serve the fixture over HTTPS — content scripts don't run on file:// without
+    // an extension-specific opt-in that isn't available via launch flags.
+    await ctx.route("**/test-fixture.local/**", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    // Mock GA4 endpoint so the captured fetch doesn't depend on real network.
+    await ctx.route("**/google-analytics.com/g/collect**", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+    });
+
     const extId = await getExtensionId(ctx);
 
     // Open the side panel FIRST so its port is connected before events fire.
@@ -17,10 +29,9 @@ test("captures fetch to GA4 and renders in side panel", async () => {
     // "Export all" button is unique to the panel header — proves React mounted.
     await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
 
-    // Now load the fixture and fire the captured fetch.
-    const fixture = "file://" + path.resolve(__dirname, "fixtures/test-page.html");
+    // Load fixture over HTTPS so the MAIN-world content script runs, then fire.
     const page = await ctx.newPage();
-    await page.goto(fixture);
+    await page.goto("https://test-fixture.local/");
     await page.click("#fire-fetch");
 
     // Panel should render the captured event. GA4 appears in the analyser badge.
