@@ -1,3 +1,6 @@
+const INIT_TIMEOUT_MS = 2000;
+const RUN_TIMEOUT_MS = 2000;
+
 const iframes = new Map<string, HTMLIFrameElement>();
 const ready = new Map<string, Promise<void>>();
 
@@ -8,17 +11,28 @@ function ensureIframe(analyserId: string, code: string): Promise<void> {
     iframe.src = chrome.runtime.getURL("src/sandbox/sandbox.html");
     iframe.style.display = "none";
     iframe.onload = () => {
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        window.removeEventListener("message", handler);
+        clearTimeout(timer);
+      };
       const handler = (ev: MessageEvent) => {
         if (ev.source !== iframe.contentWindow) return;
         if (ev.data?.type === "ready" && ev.data.analyserId === analyserId) {
-          window.removeEventListener("message", handler);
+          cleanup();
           resolve();
         }
         if (ev.data?.type === "init-error" && ev.data.analyserId === analyserId) {
-          window.removeEventListener("message", handler);
+          cleanup();
           reject(new Error(ev.data.message));
         }
       };
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error("sandbox init timeout"));
+      }, INIT_TIMEOUT_MS);
       window.addEventListener("message", handler);
       iframe.contentWindow!.postMessage({ type: "init", analyserId, code }, "*");
     };
@@ -58,13 +72,24 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       chrome.runtime.sendMessage({ type: "offscreen-result", requestId, payload: { error: "iframe missing" } });
       return false;
     }
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      window.removeEventListener("message", handler);
+      clearTimeout(timer);
+    };
     const handler = (ev: MessageEvent) => {
       if (ev.source !== iframe.contentWindow) return;
       if (ev.data?.type !== "result" || ev.data.requestId !== requestId) return;
-      window.removeEventListener("message", handler);
+      cleanup();
       const payload = "error" in ev.data ? { error: ev.data.error } : { result: ev.data.result };
       chrome.runtime.sendMessage({ type: "offscreen-result", requestId, payload });
     };
+    const timer = setTimeout(() => {
+      cleanup();
+      chrome.runtime.sendMessage({ type: "offscreen-result", requestId, payload: { error: "offscreen run timeout" } });
+    }, RUN_TIMEOUT_MS);
     window.addEventListener("message", handler);
     iframe.contentWindow.postMessage({ type: "run", requestId, input }, "*");
     return false;
