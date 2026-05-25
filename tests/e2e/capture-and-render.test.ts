@@ -27,15 +27,7 @@ test("captures fetch to GA4 and renders in side panel", async () => {
 });
 
 async function getExtensionId(ctx: import("@playwright/test").BrowserContext): Promise<string> {
-  const page = await ctx.newPage();
-  await page.goto("chrome://extensions");
-  const id = await page.evaluate(() => {
-    const mgr = document.querySelector("extensions-manager");
-    const itemList = mgr?.shadowRoot?.querySelector("extensions-item-list");
-    const item = itemList?.shadowRoot?.querySelector("extensions-item[name='Network Data Viewer']") as HTMLElement & { getAttribute(s: string): string | null };
-    return item?.getAttribute("id") ?? null;
-  });
-  await page.close();
-  if (!id) throw new Error("could not resolve extension id");
-  return id;
+  let [sw] = ctx.serviceWorkers();
+  if (!sw) sw = await ctx.waitForEvent("serviceworker", { timeout: 5000 });
+  return new URL(sw.url()).host;
 }
