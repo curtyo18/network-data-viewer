@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { decodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
+import { STORAGE_KEY } from "@/shared/messages";
 
 export function ImportDialog({ onClose }: { onClose: () => void }) {
   const [text, setText] = useState("");
@@ -9,11 +10,11 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
   async function doImport() {
     try {
       const incoming = decodeConfig(text.trim());
-      const r = await chrome.storage.local.get("analyserConfigs");
-      const existing = ((r.analyserConfigs as AnalyserConfig[] | undefined) ?? []);
+      const r = await chrome.storage.local.get(STORAGE_KEY);
+      const existing = ((r[STORAGE_KEY] as AnalyserConfig[] | undefined) ?? []);
       const byId = new Map(existing.map(a => [a.id, a]));
       for (const a of incoming) byId.set(a.id, a);
-      await chrome.storage.local.set({ analyserConfigs: Array.from(byId.values()) });
+      await chrome.storage.local.set({ [STORAGE_KEY]: Array.from(byId.values()) });
       onClose();
     } catch (e) {
       setError((e as Error).message);

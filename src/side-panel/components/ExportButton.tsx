@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { encodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
+import { STORAGE_KEY } from "@/shared/messages";
 
 export function ExportButton() {
   const [copied, setCopied] = useState(false);
   async function doExport() {
-    const r = await chrome.storage.local.get("analyserConfigs");
-    const cfgs = (r.analyserConfigs as AnalyserConfig[] | undefined) ?? [];
+    const r = await chrome.storage.local.get(STORAGE_KEY);
+    const cfgs = (r[STORAGE_KEY] as AnalyserConfig[] | undefined) ?? [];
     const s = encodeConfig(cfgs);
     await navigator.clipboard.writeText(s);
     setCopied(true);

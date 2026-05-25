@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { AnalyserConfig, DslStep } from "@/shared/types";
+import { STORAGE_KEY } from "@/shared/messages";
 
 const EMPTY: AnalyserConfig = {
   id: "", name: "", enabled: true, urlPattern: "", source: "reqBody",
@@ -26,10 +27,10 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
   }
 
   async function save() {
-    const r = await chrome.storage.local.get("analyserConfigs");
-    const list = ((r.analyserConfigs as AnalyserConfig[] | undefined) ?? []).filter(a => a.id !== cfg.id);
+    const r = await chrome.storage.local.get(STORAGE_KEY);
+    const list = ((r[STORAGE_KEY] as AnalyserConfig[] | undefined) ?? []).filter(a => a.id !== cfg.id);
     list.push(cfg);
-    await chrome.storage.local.set({ analyserConfigs: list });
+    await chrome.storage.local.set({ [STORAGE_KEY]: list });
     onClose();
   }
 

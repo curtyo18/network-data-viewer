@@ -1,4 +1,5 @@
 import type { SandboxRunner } from "./dispatcher";
+import { MSG } from "@/shared/messages";
 
 const OFFSCREEN_URL = "src/offscreen/offscreen.html";
 
@@ -11,7 +12,7 @@ export class OffscreenManager {
 
   constructor() {
     chrome.runtime.onMessage.addListener((msg, _sender) => {
-      if (msg?.type === "offscreen-result") {
+      if (msg?.type === MSG.OFFSCREEN_RESULT) {
         const p = this.pending.get(msg.requestId);
         if (p) {
           clearTimeout(p.timer);
@@ -38,13 +39,21 @@ export class OffscreenManager {
   private async ensureAnalyser(analyserId: string, code: string): Promise<void> {
     if (this.knownAnalysers.has(analyserId)) return;
     await this.ensureDocument();
-    await chrome.runtime.sendMessage({ type: "offscreen-create-iframe", analyserId, code });
+    await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_CREATE_IFRAME, analyserId, code });
     this.knownAnalysers.add(analyserId);
   }
 
   invalidate(analyserId: string): void {
     this.knownAnalysers.delete(analyserId);
-    chrome.runtime.sendMessage({ type: "offscreen-destroy-iframe", analyserId }).catch(() => {});
+    chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_DESTROY_IFRAME, analyserId }).catch(() => {});
+    if (this.knownAnalysers.size === 0) {
+      void this.closeDocumentIfOpen();
+    }
+  }
+
+  private async closeDocumentIfOpen(): Promise<void> {
+    const contexts = await chrome.runtime.getContexts({ contextTypes: [chrome.runtime.ContextType.OFFSCREEN_DOCUMENT] });
+    if (contexts.length > 0) await chrome.offscreen.closeDocument();
   }
 
   run: SandboxRunner = async (analyserId, code, input) => {
@@ -57,7 +66,7 @@ export class OffscreenManager {
         resolve({ error: "timeout" });
       }, 1000);
       this.pending.set(requestId, { resolve, timer });
-      chrome.runtime.sendMessage({ type: "offscreen-run-transform", analyserId, requestId, input }).catch(e => {
+      chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RUN_TRANSFORM, analyserId, requestId, input }).catch(e => {
         clearTimeout(timer);
         this.pending.delete(requestId);
         resolve({ error: `dispatch failed: ${(e as Error).message}` });

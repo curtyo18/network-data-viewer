@@ -1,6 +1,5 @@
 import type { AnalyserConfig } from "@/shared/types";
-
-const KEY = "analyserConfigs";
+import { STORAGE_KEY as KEY } from "@/shared/messages";
 
 export class Storage {
   constructor(private area: chrome.storage.StorageArea) {}
