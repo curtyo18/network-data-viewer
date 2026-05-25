@@ -14,7 +14,8 @@ test("captures fetch to GA4 and renders in side panel", async () => {
     // Events are session-scoped and dropped when no port is attached.
     const panel = await ctx.newPage();
     await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.locator("text=events")).toBeVisible({ timeout: 5000 });
+    // "Export all" button is unique to the panel header — proves React mounted.
+    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
 
     // Now load the fixture and fire the captured fetch.
     const fixture = "file://" + path.resolve(__dirname, "fixtures/test-page.html");
@@ -22,7 +23,7 @@ test("captures fetch to GA4 and renders in side panel", async () => {
     await page.goto(fixture);
     await page.click("#fire-fetch");
 
-    // Panel should render the captured event.
+    // Panel should render the captured event. GA4 appears in the analyser badge.
     await expect(panel.locator("text=GA4").first()).toBeVisible({ timeout: 10000 });
     await expect(panel.locator("text=G-TEST").first()).toBeVisible();
   } finally {
