@@ -15,9 +15,9 @@
     "isolatedModules": true,
     "allowImportingTsExtensions": false,
     "noEmit": true,
-    "types": ["chrome", "vite/client", "node"],
+    "types": ["chrome", "vite/client"],
     "baseUrl": ".",
     "paths": { "@/*": ["src/*"] }
   },
-  "include": ["src", "tests"]
+  "include": ["src"]
 }

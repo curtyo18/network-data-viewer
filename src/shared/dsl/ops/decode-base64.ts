@@ -5,6 +5,6 @@ export function decodeBase64(input: unknown): string {
     const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
     return new TextDecoder("utf-8").decode(bytes);
   } catch (e) {
-    throw new Error("decode-base64: invalid input");
+    throw new Error("decode-base64: invalid input", { cause: e });
   }
 }

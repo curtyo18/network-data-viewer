@@ -8,7 +8,8 @@ export function useEventStream(): MatchResult[] {
   const [events, setEvents] = useState<MatchResult[]>([]);
 
   useEffect(() => {
-    const port = chrome.runtime.connect({ name: PORT_NAME });
+    let cancelled = false;
+    let currentPort: chrome.runtime.Port | null = null;
     const listener = (msg: { type: string; payload: MatchResult }) => {
       if (msg.type !== MSG.MATCH_RESULT) return;
       setEvents(prev => {
@@ -16,8 +17,18 @@ export function useEventStream(): MatchResult[] {
         return next.length > MAX_EVENTS ? next.slice(0, MAX_EVENTS) : next;
       });
     };
-    port.onMessage.addListener(listener);
-    return () => { port.disconnect(); };
+    const connect = () => {
+      if (cancelled) return;
+      const port = chrome.runtime.connect({ name: PORT_NAME });
+      currentPort = port;
+      port.onMessage.addListener(listener);
+      port.onDisconnect.addListener(() => {
+        if (cancelled || currentPort !== port) return;
+        setTimeout(connect, 200);
+      });
+    };
+    connect();
+    return () => { cancelled = true; currentPort?.disconnect(); };
   }, []);
 
   return events;

@@ -28,7 +28,7 @@ export default defineManifest({
   ],
   sandbox: { pages: ["src/sandbox/sandbox.html"] },
   web_accessible_resources: [
-    { resources: ["src/sandbox/sandbox.html", "src/offscreen/offscreen.html"], matches: ["<all_urls>"] }
+    { resources: ["src/sandbox/sandbox.html"], matches: ["<all_urls>"] }
   ],
   icons: { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   action: {
