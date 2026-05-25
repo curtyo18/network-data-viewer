@@ -16,9 +16,18 @@ describe("share roundtrip", () => {
     expect(decodeConfig(encodeConfig(fixture))).toEqual(fixture);
   });
   it("rejects unknown version", () => {
-    expect(() => decodeConfig("dvw:99:abc")).toThrow();
+    expect(() => decodeConfig("dvw:99:abc")).toThrow(/unsupported config version: 99/);
   });
   it("rejects garbled payload", () => {
     expect(() => decodeConfig("dvw:1:###not-lz###")).toThrow();
+  });
+  it("rejects string not starting with dvw:", () => {
+    expect(() => decodeConfig("not-a-dataviewer-string")).toThrow("not a dataviewer config string");
+  });
+  it("rejects string not starting with dvw: (another variant)", () => {
+    expect(() => decodeConfig("hello:world")).toThrow("not a dataviewer config string");
+  });
+  it("unknown version error includes the version number", () => {
+    expect(() => decodeConfig("dvw:42:abc")).toThrow("42");
   });
 });
