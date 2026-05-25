@@ -1,15 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { MatchResult } from "@/shared/types";
 
 const MAX_EVENTS = 1000;
 
 export function useEventStream(): MatchResult[] {
   const [events, setEvents] = useState<MatchResult[]>([]);
-  const portRef = useRef<chrome.runtime.Port | null>(null);
 
   useEffect(() => {
     const port = chrome.runtime.connect({ name: "dataviewer-events" });
-    portRef.current = port;
     const listener = (msg: { type: string; payload: MatchResult }) => {
       if (msg.type !== "match-result") return;
       setEvents(prev => {
@@ -18,7 +16,7 @@ export function useEventStream(): MatchResult[] {
       });
     };
     port.onMessage.addListener(listener);
-    return () => { port.disconnect(); portRef.current = null; };
+    return () => { port.disconnect(); };
   }, []);
 
   return events;
