@@ -1,0 +1,14 @@
+# design docs are tracked in the life repo, not here
+specs/
+plans/
+
+# build + dependency artefacts
+node_modules/
+dist/
+*.zip
+
+# tooling
+.claude/
+coverage/
+test-results/
+playwright-report/
