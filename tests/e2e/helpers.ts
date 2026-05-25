@@ -1,5 +1,8 @@
 import { chromium, BrowserContext } from "@playwright/test";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export async function launchWithExtension(): Promise<BrowserContext> {
   const ext = path.resolve(__dirname, "../../dist");

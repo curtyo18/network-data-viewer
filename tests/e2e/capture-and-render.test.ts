@@ -1,6 +1,9 @@
 import { test, expect } from "@playwright/test";
 import { launchWithExtension } from "./helpers";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 test("captures fetch to GA4 and renders in side panel", async () => {
   const ctx = await launchWithExtension();
