@@ -21,8 +21,16 @@ chrome.runtime.onConnect.addListener(port => {
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && STORAGE_KEY in changes) {
-    configCache = changes[STORAGE_KEY].newValue as AnalyserConfig[] | undefined ?? [];
-    for (const cfg of configCache) offscreen.invalidate(cfg.id);
+    const oldConfigs = (changes[STORAGE_KEY].oldValue as AnalyserConfig[] | undefined) ?? [];
+    const newConfigs = (changes[STORAGE_KEY].newValue as AnalyserConfig[] | undefined) ?? [];
+    configCache = newConfigs;
+    const oldById = new Map(oldConfigs.map(c => [c.id, c]));
+    for (const cfg of newConfigs) {
+      const prev = oldById.get(cfg.id);
+      if (prev?.sandboxCode !== cfg.sandboxCode) offscreen.invalidate(cfg.id);
+      oldById.delete(cfg.id);
+    }
+    for (const removedId of oldById.keys()) offscreen.invalidate(removedId);
   }
 });
 
@@ -36,10 +44,12 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
   const parsed = CapturedEventSchema.safeParse(raw);
   if (!parsed.success) return;
   const event: CapturedEvent = parsed.data;
-  if (sender.tab?.id !== undefined) event.originTab = { tabId: sender.tab.id, url: sender.tab.url ?? "" };
+  const enriched: CapturedEvent = sender.tab?.id !== undefined
+    ? { ...event, originTab: { tabId: sender.tab.id, url: sender.tab.url ?? "" } }
+    : event;
 
   if (configCache === null) configCache = await storage.getAnalysers();
-  const results: MatchResult[] = await dispatch(event, configCache, offscreen.run);
+  const results: MatchResult[] = await dispatch(enriched, configCache, offscreen.run);
 
   if (results.length === 0 || panelPorts.size === 0) return;
   for (const r of results) {
