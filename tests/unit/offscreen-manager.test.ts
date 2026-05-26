@@ -170,10 +170,18 @@ describe("OffscreenManager", () => {
       // Invalidate the only known analyser.
       manager.invalidate("a1");
 
-      // closeDocumentIfOpen is async and fire-and-forget — flush micro/macrotasks.
-      await new Promise((r) => setTimeout(r, 0));
+      // closeDocumentIfOpen is async and fire-and-forget — wait until called.
+      await vi.waitFor(() => expect(closeDocument).toHaveBeenCalled());
+    });
+  });
 
-      expect(closeDocument).toHaveBeenCalled();
+  describe("catch path in run", () => {
+    it("returns { error } when offscreen document creation fails", async () => {
+      const stub = makeChromeStub();
+      stub.createDocument.mockRejectedValueOnce(new Error("Page failed to load"));
+      const om = new OffscreenManager();
+      const result = await om.run("a", "code", null, { showRaw: false });
+      expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*Page failed to load/) });
     });
   });
 });

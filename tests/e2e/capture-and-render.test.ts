@@ -1,5 +1,11 @@
 import { test, expect } from "@playwright/test";
-import { launchWithExtension } from "./helpers";
+import {
+  launchWithExtension,
+  setupHarness,
+  waitForInstallMigration,
+  waitForPanelPortReady,
+  POST_DISPATCH_SLACK_MS,
+} from "./helpers";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,7 +14,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureHtml = readFileSync(path.resolve(__dirname, "fixtures/test-page.html"), "utf-8");
 
 test("captures fetch to GA4 and renders in side panel", async () => {
-  const ctx = await launchWithExtension();
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-ga4",
+      name: "GA4",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]
+  });
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
@@ -17,36 +33,6 @@ test("captures fetch to GA4 and renders in side panel", async () => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const sw = await getServiceWorker(ctx);
-    sw.on("console", (msg) => console.log("[sw]", msg.text()));
-    const extId = new URL(sw.url()).host;
-
-    // Explicit seed via SW context — removes the onInstalled timing variable.
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-ga4",
-          name: "GA4",
-          enabled: true,
-          urlPattern: "google-analytics\\.com/g/collect",
-          source: "url",
-          dsl: [{ op: "query-parse" }],
-          createdAt: 0
-        }]
-      });
-    });
-
-    const panel = await ctx.newPage();
-    panel.on("console", (msg) => console.log("[panel]", msg.text()));
-    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
-    // Give the port-connect handshake a moment to register on the SW.
-    await panel.waitForTimeout(500);
-
-    const page = await ctx.newPage();
-    page.on("console", (msg) => console.log("[page]", msg.text()));
-    page.on("pageerror", (err) => console.log("[page error]", err.message));
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-fetch");
 
@@ -60,7 +46,18 @@ test("captures fetch to GA4 and renders in side panel", async () => {
 test("sandbox path: analyser with sandboxCode produces a row via the offscreen iframe", async () => {
   // Regression guard: when src/offscreen/offscreen.html wasn't bundled, chrome.offscreen.createDocument
   // failed silently and any analyser with sandboxCode produced no output. This exercises that path.
-  const ctx = await launchWithExtension();
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-sandbox",
+      name: "Sandboxed",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [],
+      sandboxCode: 'return { fanOut: ["sandbox-marker-row"] };',
+      createdAt: 0
+    }]
+  });
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
@@ -69,36 +66,6 @@ test("sandbox path: analyser with sandboxCode produces a row via the offscreen i
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const sw = await getServiceWorker(ctx);
-    sw.on("console", (msg) => console.log("[sw]", msg.text()));
-    const extId = new URL(sw.url()).host;
-
-    // Wait briefly for the install-time migration to settle so it doesn't race with our seed.
-    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
-
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-sandbox",
-          name: "Sandboxed",
-          enabled: true,
-          urlPattern: "google-analytics\\.com/g/collect",
-          source: "url",
-          dsl: [],
-          sandboxCode: 'return { fanOut: ["sandbox-marker-row"] };',
-          createdAt: 0
-        }]
-      });
-    });
-
-    const panel = await ctx.newPage();
-    panel.on("console", (msg) => console.log("[panel]", msg.text()));
-    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
-    await panel.waitForTimeout(500);
-
-    const page = await ctx.newPage();
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-fetch");
 
@@ -110,7 +77,17 @@ test("sandbox path: analyser with sandboxCode produces a row via the offscreen i
 });
 
 test("captures XHR to a JSON endpoint and renders in side panel", async () => {
-  const ctx = await launchWithExtension();
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-xhr",
+      name: "XhrAnalyser",
+      enabled: true,
+      urlPattern: "__test/analytics",
+      source: "reqBody",
+      dsl: [{ op: "json-parse" }],
+      createdAt: 0
+    }]
+  });
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
@@ -119,36 +96,6 @@ test("captures XHR to a JSON endpoint and renders in side panel", async () => {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) });
     });
 
-    const sw = await getServiceWorker(ctx);
-    sw.on("console", (msg) => console.log("[sw]", msg.text()));
-    const extId = new URL(sw.url()).host;
-
-    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
-
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-xhr",
-          name: "XhrAnalyser",
-          enabled: true,
-          urlPattern: "__test/analytics",
-          source: "reqBody",
-          dsl: [{ op: "json-parse" }],
-          createdAt: 0
-        }]
-      });
-    });
-
-    const panel = await ctx.newPage();
-    panel.on("console", (msg) => console.log("[panel]", msg.text()));
-    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
-    await panel.waitForTimeout(500);
-
-    const page = await ctx.newPage();
-    page.on("console", (msg) => console.log("[page]", msg.text()));
-    page.on("pageerror", (err) => console.log("[page error]", err.message));
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-xhr");
 
@@ -161,7 +108,17 @@ test("captures XHR to a JSON endpoint and renders in side panel", async () => {
 });
 
 test("captures sendBeacon to GA4 and renders in side panel", async () => {
-  const ctx = await launchWithExtension();
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-beacon",
+      name: "BeaconAnalyser",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]
+  });
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
@@ -170,36 +127,6 @@ test("captures sendBeacon to GA4 and renders in side panel", async () => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const sw = await getServiceWorker(ctx);
-    sw.on("console", (msg) => console.log("[sw]", msg.text()));
-    const extId = new URL(sw.url()).host;
-
-    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
-
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-beacon",
-          name: "BeaconAnalyser",
-          enabled: true,
-          urlPattern: "google-analytics\\.com/g/collect",
-          source: "url",
-          dsl: [{ op: "query-parse" }],
-          createdAt: 0
-        }]
-      });
-    });
-
-    const panel = await ctx.newPage();
-    panel.on("console", (msg) => console.log("[panel]", msg.text()));
-    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
-    await panel.waitForTimeout(500);
-
-    const page = await ctx.newPage();
-    page.on("console", (msg) => console.log("[page]", msg.text()));
-    page.on("pageerror", (err) => console.log("[page error]", err.message));
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-beacon");
 
@@ -211,7 +138,18 @@ test("captures sendBeacon to GA4 and renders in side panel", async () => {
 });
 
 test("settings showRaw toggle is reflected in sandbox analyser output", async () => {
-  const ctx = await launchWithExtension();
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-showraw",
+      name: "ShowRawAnalyser",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [],
+      sandboxCode: 'return { fanOut: [settings && settings.showRaw ? "raw-output" : "filtered-output"] };',
+      createdAt: 0
+    }]
+  });
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
@@ -220,37 +158,6 @@ test("settings showRaw toggle is reflected in sandbox analyser output", async ()
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const sw = await getServiceWorker(ctx);
-    sw.on("console", (msg) => console.log("[sw]", msg.text()));
-    const extId = new URL(sw.url()).host;
-
-    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
-
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-showraw",
-          name: "ShowRawAnalyser",
-          enabled: true,
-          urlPattern: "google-analytics\\.com/g/collect",
-          source: "url",
-          dsl: [],
-          sandboxCode: 'return { fanOut: [settings && settings.showRaw ? "raw-output" : "filtered-output"] };',
-          createdAt: 0
-        }]
-      });
-    });
-
-    const panel = await ctx.newPage();
-    panel.on("console", (msg) => console.log("[panel]", msg.text()));
-    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
-    await panel.waitForTimeout(500);
-
-    const page = await ctx.newPage();
-    page.on("console", (msg) => console.log("[page]", msg.text()));
-    page.on("pageerror", (err) => console.log("[page error]", err.message));
     await page.goto("https://test-fixture.local/");
 
     // First fire: showRaw is false (default) → expect filtered-output
@@ -274,6 +181,9 @@ test("settings showRaw toggle is reflected in sandbox analyser output", async ()
 // connected at dispatch time. If the panel isn't open, results vanish — no buffering today.
 // If this test starts failing, someone added buffering — update it to assert replay instead.
 test("panel-not-open: results are silently dropped when panel port is not connected", async () => {
+  // This test deliberately fires the fetch BEFORE opening the panel, so we cannot use
+  // setupHarness (which opens the panel first). We keep setup explicit but use the
+  // named wait helpers instead of bare setTimeout / waitForTimeout calls.
   const ctx = await launchWithExtension();
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
@@ -283,35 +193,38 @@ test("panel-not-open: results are silently dropped when panel port is not connec
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const sw = await getServiceWorker(ctx);
+    let [sw] = ctx.serviceWorkers();
+    if (!sw) sw = await ctx.waitForEvent("serviceworker", { timeout: 5000 });
     sw.on("console", (msg) => console.log("[sw]", msg.text()));
     const extId = new URL(sw.url()).host;
 
-    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
+    await waitForInstallMigration(sw);
 
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-drop",
-          name: "GA4",
-          enabled: true,
-          urlPattern: "google-analytics\\.com/g/collect",
-          source: "url",
-          dsl: [{ op: "query-parse" }],
-          createdAt: 0
-        }]
-      });
-    });
+    await sw.evaluate(async (seed: unknown) => {
+      await chrome.storage.local.set({ analyserConfigs: seed });
+    }, [{
+      id: "test-drop",
+      name: "GA4",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]);
 
     // Fire the fetch BEFORE opening the panel — no port is connected yet
     const page = await ctx.newPage();
     page.on("console", (msg) => console.log("[page]", msg.text()));
     page.on("pageerror", (err) => console.log("[page error]", err.message));
     await page.goto("https://test-fixture.local/");
-    await page.click("#fire-fetch");
 
-    // Wait to ensure the SW has had time to process and attempt dispatch
-    await page.waitForTimeout(1000);
+    // Wait for the GA4 response to confirm the fetch was dispatched through the SW,
+    // then allow a small slack for any post-dispatch SW work before the panel connects.
+    const responseReady = page.waitForResponse(/google-analytics\.com\/g\/collect/);
+    await page.click("#fire-fetch");
+    await responseReady;
+    // we've already waited for the response; dispatch happens after that on the SW side.
+    await page.waitForTimeout(POST_DISPATCH_SLACK_MS);
 
     // NOW open the panel — the result should not appear (it was dropped)
     const panel = await ctx.newPage();
@@ -319,8 +232,8 @@ test("panel-not-open: results are silently dropped when panel port is not connec
     panel.on("pageerror", (err) => console.log("[panel error]", err.message));
     await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
     await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
+    await waitForPanelPortReady(panel);
 
-    await panel.waitForTimeout(2000);
     await expect(panel.locator("text=GA4")).toHaveCount(0);
   } finally {
     await ctx.close();
@@ -328,7 +241,17 @@ test("panel-not-open: results are silently dropped when panel port is not connec
 });
 
 test("clear button removes all rows from the events list", async () => {
-  const ctx = await launchWithExtension();
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-cleartest",
+      name: "ClearTest",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]
+  });
   try {
     await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
@@ -337,33 +260,6 @@ test("clear button removes all rows from the events list", async () => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 
-    const sw = await getServiceWorker(ctx);
-    const extId = new URL(sw.url()).host;
-
-    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
-
-    await sw.evaluate(async () => {
-      await chrome.storage.local.set({
-        analyserConfigs: [{
-          id: "test-cleartest",
-          name: "ClearTest",
-          enabled: true,
-          urlPattern: "google-analytics\\.com/g/collect",
-          source: "url",
-          dsl: [{ op: "query-parse" }],
-          createdAt: 0
-        }]
-      });
-    });
-
-    const panel = await ctx.newPage();
-    panel.on("console", (msg) => console.log("[panel]", msg.text()));
-    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
-    await panel.waitForTimeout(500);
-
-    const page = await ctx.newPage();
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-fetch");
 
@@ -376,9 +272,3 @@ test("clear button removes all rows from the events list", async () => {
     await ctx.close();
   }
 });
-
-async function getServiceWorker(ctx: import("@playwright/test").BrowserContext) {
-  let [sw] = ctx.serviceWorkers();
-  if (!sw) sw = await ctx.waitForEvent("serviceworker", { timeout: 5000 });
-  return sw;
-}
