@@ -10,6 +10,7 @@ export const CapturedEventSchema = z.object({
   url: z.string(),
   reqHeaders: z.record(z.string()),
   reqBody: z.string().nullable(),
+  reqBodyEncoding: z.enum(["text", "base64"]).optional(),
   resStatus: z.number().nullable(),
   resHeaders: z.record(z.string()),
   resBody: z.string().nullable(),

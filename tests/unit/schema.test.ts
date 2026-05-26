@@ -36,6 +36,14 @@ describe("CapturedEventSchema", () => {
   it("accepts an event with optional fields omitted", () => {
     expect(() => CapturedEventSchema.parse(baseEvent)).not.toThrow();
   });
+
+  it("accepts reqBodyEncoding: \"base64\"", () => {
+    expect(() => CapturedEventSchema.parse({ ...baseEvent, reqBodyEncoding: "base64" })).not.toThrow();
+  });
+
+  it("rejects reqBodyEncoding: \"invalid\"", () => {
+    expect(() => CapturedEventSchema.parse({ ...baseEvent, reqBodyEncoding: "invalid" })).toThrow();
+  });
 });
 
 describe("AnalyserConfigSchema", () => {
