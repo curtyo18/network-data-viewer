@@ -7,3 +7,7 @@ export type Settings = {
 export const DEFAULT_SETTINGS: Settings = {
   showRaw: false,
 };
+
+export function mergeSettings(stored: Partial<Settings> | undefined): Settings {
+  return { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
+}

@@ -8,7 +8,7 @@ import { ConfigEditor } from "./components/ConfigEditor";
 import { ImportDialog } from "./components/ImportDialog";
 import { ExportButton } from "./components/ExportButton";
 import type { AnalyserConfig } from "@/shared/types";
-import { DEFAULT_SETTINGS, STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
+import { DEFAULT_SETTINGS, STORAGE_KEY_SETTINGS, mergeSettings, type Settings } from "@/shared/settings";
 
 type Mode =
   | { kind: "events" }
@@ -26,12 +26,12 @@ function App() {
     chrome.storage.local.get(STORAGE_KEY_SETTINGS).then(res => {
       if (cancelled) return;
       const stored = res[STORAGE_KEY_SETTINGS] as Partial<Settings> | undefined;
-      setSettings({ ...DEFAULT_SETTINGS, ...(stored ?? {}) });
+      setSettings(mergeSettings(stored));
     });
     const onChange = (changes: { [k: string]: chrome.storage.StorageChange }, area: string) => {
       if (area === "local" && changes[STORAGE_KEY_SETTINGS]) {
         const next = changes[STORAGE_KEY_SETTINGS].newValue as Partial<Settings> | undefined;
-        setSettings({ ...DEFAULT_SETTINGS, ...(next ?? {}) });
+        setSettings(mergeSettings(next));
       }
     };
     chrome.storage.onChanged.addListener(onChange);

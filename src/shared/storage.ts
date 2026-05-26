@@ -1,6 +1,6 @@
 import type { AnalyserConfig } from "@/shared/types";
 import { STORAGE_KEY } from "@/shared/messages";
-import { STORAGE_KEY_SETTINGS, DEFAULT_SETTINGS, type Settings } from "@/shared/settings";
+import { STORAGE_KEY_SETTINGS, mergeSettings, type Settings } from "@/shared/settings";
 
 export class Storage {
   constructor(private area: chrome.storage.StorageArea) {}
@@ -16,8 +16,7 @@ export class Storage {
 
   async getSettings(): Promise<Settings> {
     const res = await this.area.get(STORAGE_KEY_SETTINGS);
-    const stored = res[STORAGE_KEY_SETTINGS] as Partial<Settings> | undefined;
-    return { ...DEFAULT_SETTINGS, ...(stored ?? {}) };
+    return mergeSettings(res[STORAGE_KEY_SETTINGS] as Partial<Settings> | undefined);
   }
 
   async setSettings(partial: Partial<Settings>): Promise<void> {
