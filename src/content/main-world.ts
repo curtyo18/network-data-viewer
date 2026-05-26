@@ -2,8 +2,6 @@
   if ((window as unknown as { __DVW_PATCHED__?: boolean }).__DVW_PATCHED__) return;
   (window as unknown as { __DVW_PATCHED__?: boolean }).__DVW_PATCHED__ = true;
 
-  console.log("[dvw-main] script loaded");
-
   // Cross-world bridge: post directly to window.message; ISOLATED bridge listens.
   // Avoids the MAIN/ISOLATED setup-event race that affects MessageChannel handoff at document_start.
   const send = (event: unknown): void => {
@@ -60,7 +58,6 @@
 
   const origFetch = window.fetch.bind(window);
   window.fetch = async function patchedFetch(input: RequestInfo | URL, init?: RequestInit) {
-    console.log("[dvw-main] patched fetch:", typeof input === "string" ? input : (input as URL).toString?.() ?? "[req]");
     const response = await origFetch(input, init);
     void emitFetch(input, init, response.clone());
     return response;

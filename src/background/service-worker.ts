@@ -42,19 +42,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageSender): Promise<void> {
   const parsed = CapturedEventSchema.safeParse(raw);
-  if (!parsed.success) {
-    console.log("[dvw-sw] schema reject:", parsed.error.errors[0]?.message);
-    return;
-  }
+  if (!parsed.success) return;
   const event: CapturedEvent = parsed.data;
   const enriched: CapturedEvent = sender.tab?.id !== undefined
     ? { ...event, originTab: { tabId: sender.tab.id, url: sender.tab.url ?? "" } }
     : event;
-  console.log("[dvw-sw] event:", enriched.url);
 
   if (configCache === null) configCache = await storage.getAnalysers();
   const results: MatchResult[] = await dispatch(enriched, configCache, offscreen.run);
-  console.log("[dvw-sw] dispatched:", results.length, "matches, ports:", panelPorts.size);
 
   if (results.length === 0 || panelPorts.size === 0) return;
   for (const r of results) {
