@@ -4,7 +4,7 @@ import { MSG, PORT_NAME } from "@/shared/messages";
 
 const MAX_EVENTS = 1000;
 
-export function useEventStream(): MatchResult[] {
+export function useEventStream(): { events: MatchResult[]; clear: () => void } {
   const [events, setEvents] = useState<MatchResult[]>([]);
 
   useEffect(() => {
@@ -31,5 +31,5 @@ export function useEventStream(): MatchResult[] {
     return () => { cancelled = true; currentPort?.disconnect(); };
   }, []);
 
-  return events;
+  return { events, clear: () => setEvents([]) };
 }

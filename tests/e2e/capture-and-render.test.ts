@@ -327,6 +327,56 @@ test("panel-not-open: results are silently dropped when panel port is not connec
   }
 });
 
+test("clear button removes all rows from the events list", async () => {
+  const ctx = await launchWithExtension();
+  try {
+    await ctx.route(/test-fixture\.local/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    await ctx.route(/google-analytics\.com\/g\/collect/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+    });
+
+    const sw = await getServiceWorker(ctx);
+    const extId = new URL(sw.url()).host;
+
+    await sw.evaluate(() => new Promise<void>(r => setTimeout(r, 200)));
+
+    await sw.evaluate(async () => {
+      await chrome.storage.local.set({
+        analyserConfigs: [{
+          id: "test-cleartest",
+          name: "ClearTest",
+          enabled: true,
+          urlPattern: "google-analytics\\.com/g/collect",
+          source: "url",
+          dsl: [{ op: "query-parse" }],
+          createdAt: 0
+        }]
+      });
+    });
+
+    const panel = await ctx.newPage();
+    panel.on("console", (msg) => console.log("[panel]", msg.text()));
+    panel.on("pageerror", (err) => console.log("[panel error]", err.message));
+    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
+    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
+    await panel.waitForTimeout(500);
+
+    const page = await ctx.newPage();
+    await page.goto("https://test-fixture.local/");
+    await page.click("#fire-fetch");
+
+    await expect(panel.locator("text=ClearTest").first()).toBeVisible({ timeout: 5000 });
+
+    await panel.getByRole("button", { name: "Clear" }).click();
+
+    await expect(panel.locator("text=ClearTest")).toHaveCount(0, { timeout: 3000 });
+  } finally {
+    await ctx.close();
+  }
+});
+
 async function getServiceWorker(ctx: import("@playwright/test").BrowserContext) {
   let [sw] = ctx.serviceWorkers();
   if (!sw) sw = await ctx.waitForEvent("serviceworker", { timeout: 5000 });
