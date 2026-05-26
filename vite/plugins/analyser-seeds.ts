@@ -3,8 +3,8 @@ import * as fs from "node:fs/promises";
 import { transform } from "esbuild";
 import vm from "node:vm";
 import type { ModuleNode, Plugin } from "vite";
-import type { AnalyserConfig } from "@/shared/types";
-import { AnalyserConfigSchema } from "@/shared/schema";
+import type { AnalyserConfig } from "../../src/shared/types";
+import { AnalyserConfigSchema } from "../../src/shared/schema";
 
 const VIRTUAL_ID = "virtual:analyser-seeds";
 const RESOLVED_VIRTUAL_ID = "\0" + VIRTUAL_ID;
@@ -60,7 +60,13 @@ export async function buildAllSeeds(examplesDir: string): Promise<AnalyserConfig
 }
 
 async function fileExists(p: string): Promise<boolean> {
-  try { await fs.stat(p); return true; } catch { return false; }
+  try {
+    await fs.stat(p);
+    return true;
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw e;
+  }
 }
 
 async function loadMeta(metaPath: string): Promise<Record<string, unknown>> {

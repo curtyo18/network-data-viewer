@@ -92,7 +92,7 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
   if (body === null) return null;
 
   const showRaw = readShowRaw(settings);
-  const events: Array<EventRecord | unknown> = [];
+  const events: unknown[] = [];
 
   for (const segment of splitSegments(body)) {
     const event = parseSegment(segment);

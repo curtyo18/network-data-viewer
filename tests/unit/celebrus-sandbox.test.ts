@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { extractSandboxBody } from "../../vite/plugins/analyser-seeds";
@@ -12,14 +12,15 @@ const FIXTURE = fs.readFileSync(
   "utf8"
 );
 
-async function loadSandbox(): Promise<(input: unknown, settings: unknown) => unknown> {
+let sandbox: (input: unknown, settings: unknown) => unknown;
+
+beforeAll(async () => {
   const body = await extractSandboxBody(SANDBOX_FILE);
-  return new Function("input", "settings", body) as (i: unknown, s: unknown) => unknown;
-}
+  sandbox = new Function("input", "settings", body) as (i: unknown, s: unknown) => unknown;
+});
 
 describe("celebrus sandbox", () => {
-  it("returns { fanOut: [...] } for a real beacon", async () => {
-    const sandbox = await loadSandbox();
+  it("returns { fanOut: [...] } for a real beacon", () => {
     const result = sandbox(FIXTURE, { showRaw: false }) as { fanOut: unknown[] };
     expect(result).toHaveProperty("fanOut");
     expect(Array.isArray(result.fanOut)).toBe(true);
@@ -29,15 +30,13 @@ describe("celebrus sandbox", () => {
     expect(result.fanOut[0]).toMatchObject({ ap: "pageview" });
   });
 
-  it("emits exactly one more event in showRaw mode (beforeunload is the only filtered one)", async () => {
-    const sandbox = await loadSandbox();
+  it("emits exactly one more event in showRaw mode (beforeunload is the only filtered one)", () => {
     const filtered = (sandbox(FIXTURE, { showRaw: false }) as { fanOut: unknown[] }).fanOut.length;
     const raw = (sandbox(FIXTURE, { showRaw: true }) as { fanOut: unknown[] }).fanOut.length;
     expect(raw - filtered).toBe(1);
   });
 
-  it("falls back to decoded string when ap=client ct isn't JSON", async () => {
-    const sandbox = await loadSandbox();
+  it("falls back to decoded string when ap=client ct isn't JSON", () => {
     const fixture = fs.readFileSync(
       path.resolve(__dirname, "..", "fixtures", "celebrus-client-badjson.txt"),
       "utf8"
@@ -47,8 +46,7 @@ describe("celebrus sandbox", () => {
     expect(result.fanOut).toContain("{broken json");
   });
 
-  it("decodes URI-encoded ct on ap=client events", async () => {
-    const sandbox = await loadSandbox();
+  it("decodes URI-encoded ct on ap=client events", () => {
     const fixture = fs.readFileSync(
       path.resolve(__dirname, "..", "fixtures", "celebrus-client-nonjson.txt"),
       "utf8"
@@ -57,14 +55,12 @@ describe("celebrus sandbox", () => {
     expect(result.fanOut).toContain("plain text");
   });
 
-  it("returns null for non-string input", async () => {
-    const sandbox = await loadSandbox();
+  it("returns null for non-string input", () => {
     expect(sandbox({ foo: 1 }, { showRaw: false })).toBeNull();
     expect(sandbox(null, { showRaw: false })).toBeNull();
   });
 
-  it("returns null when the body delimiter is missing", async () => {
-    const sandbox = await loadSandbox();
+  it("returns null when the body delimiter is missing", () => {
     expect(sandbox("no marker here", { showRaw: false })).toBeNull();
   });
 });
