@@ -241,6 +241,55 @@ test("panel-not-open: results are buffered and replayed when the panel connects"
   }
 });
 
+test("filter bar narrows visible rows by analyser name", async () => {
+  // Two analysers both match the same GA4 URL. One fetch fires — both produce a row.
+  // Typing one analyser's name into the filter leaves only that row visible.
+  const { ctx, panel, page } = await setupHarness({
+    seed: [
+      {
+        id: "test-filter-a",
+        name: "FilterAlpha",
+        enabled: true,
+        urlPattern: "google-analytics\\.com/g/collect",
+        source: "url",
+        dsl: [{ op: "query-parse" }],
+        createdAt: 0
+      },
+      {
+        id: "test-filter-b",
+        name: "FilterBeta",
+        enabled: true,
+        urlPattern: "google-analytics\\.com/g/collect",
+        source: "url",
+        dsl: [{ op: "query-parse" }],
+        createdAt: 0
+      }
+    ]
+  });
+  try {
+    await ctx.route(/test-fixture\.local/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    await ctx.route(/google-analytics\.com\/g\/collect/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+    });
+
+    await page.goto("https://test-fixture.local/");
+    await page.click("#fire-fetch");
+
+    // Both analyser rows should appear before filtering
+    await expect(panel.locator("text=FilterAlpha").first()).toBeVisible({ timeout: 10000 });
+    await expect(panel.locator("text=FilterBeta").first()).toBeVisible();
+
+    // Type into the filter — only FilterAlpha rows should remain
+    await panel.getByPlaceholder("filter url / method / analyser…").fill("FilterAlpha");
+    await expect(panel.locator("text=FilterAlpha").first()).toBeVisible();
+    await expect(panel.locator("text=FilterBeta")).toHaveCount(0, { timeout: 3000 });
+  } finally {
+    await ctx.close();
+  }
+});
+
 test("clear button removes all rows from the events list", async () => {
   const { ctx, panel, page } = await setupHarness({
     seed: [{
