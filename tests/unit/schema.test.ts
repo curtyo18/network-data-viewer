@@ -102,4 +102,22 @@ describe("AnalyserConfigSchema seedVersion", () => {
       })
     ).toThrow();
   });
+
+  it("accepts seedVersion: 0", () => {
+    expect(() =>
+      AnalyserConfigSchema.parse({
+        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        dsl: [], createdAt: 0, seedVersion: 0,
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects a non-integer seedVersion", () => {
+    expect(() =>
+      AnalyserConfigSchema.parse({
+        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        dsl: [], createdAt: 0, seedVersion: 1.5,
+      })
+    ).toThrow();
+  });
 });
