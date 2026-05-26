@@ -17,7 +17,7 @@ type Mode =
   | { kind: "import" };
 
 function App() {
-  const events = useEventStream();
+  const { events, clear: clearEvents } = useEventStream();
   const [mode, setMode] = useState<Mode>({ kind: "events" });
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
 
@@ -65,6 +65,15 @@ function App() {
             <input type="checkbox" checked={settings.showRaw} onChange={toggleShowRaw} />
             show raw
           </label>
+          {mode.kind === "events" && events.length > 0 && (
+            <button
+              className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200"
+              onClick={clearEvents}
+              aria-label="Clear events"
+            >
+              Clear
+            </button>
+          )}
           <button className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200" onClick={() => setMode({ kind: "import" })}>Import</button>
           <ExportButton />
         </div>
