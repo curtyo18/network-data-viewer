@@ -49,17 +49,38 @@ export async function dispatch(
     }
 
     const latencyMs = performance.now() - t0;
-    const result: MatchResult = {
+    const base: Omit<MatchResult, "sandboxOutput"> = {
       analyserId: cfg.id,
       analyserName: cfg.name,
       event,
       dslOutput,
-      sandboxOutput,
       latencyMs,
     };
-    if (dslErr) result.error = { stage: "dsl", message: dslErr };
-    else if (sbErr) result.error = { stage: "sandbox", message: sbErr };
-    out.push(result);
+
+    if (dslErr) {
+      out.push({ ...base, sandboxOutput: undefined, error: { stage: "dsl", message: dslErr } });
+      continue;
+    }
+    if (sbErr) {
+      out.push({ ...base, sandboxOutput: undefined, error: { stage: "sandbox", message: sbErr } });
+      continue;
+    }
+    if (isFanOut(sandboxOutput)) {
+      for (const row of sandboxOutput.fanOut) {
+        out.push({ ...base, sandboxOutput: row });
+      }
+    } else {
+      out.push({ ...base, sandboxOutput });
+    }
   }
   return out;
+}
+
+function isFanOut(v: unknown): v is { fanOut: unknown[] } {
+  return (
+    !!v &&
+    typeof v === "object" &&
+    "fanOut" in v &&
+    Array.isArray((v as { fanOut: unknown }).fanOut)
+  );
 }

@@ -75,4 +75,43 @@ describe("dispatch", () => {
     await dispatch(makeEvent(), [c], customSettings, sandbox);
     expect(sandbox).toHaveBeenCalledWith(c.id, c.sandboxCode, { a: 1 }, customSettings);
   });
+
+  it("unwraps { fanOut: [...] } into N MatchResults", async () => {
+    const sandbox = vi.fn(async () => ({ result: { fanOut: [{ a: 1 }, { a: 2 }, { a: 3 }] } }));
+    const c = cfg({ sandboxCode: "return ...;" });
+    const res = await dispatch(makeEvent(), [c], SETTINGS, sandbox);
+    expect(res).toHaveLength(3);
+    expect(res.map(r => r.sandboxOutput)).toEqual([{ a: 1 }, { a: 2 }, { a: 3 }]);
+  });
+
+  it("emits zero MatchResults for { fanOut: [] }", async () => {
+    const sandbox = vi.fn(async () => ({ result: { fanOut: [] } }));
+    const c = cfg({ sandboxCode: "return ...;" });
+    const res = await dispatch(makeEvent(), [c], SETTINGS, sandbox);
+    expect(res).toHaveLength(0);
+  });
+
+  it("treats { fanOut: 'not-array' } as a single non-fan-out row", async () => {
+    const sandbox = vi.fn(async () => ({ result: { fanOut: "nope" } }));
+    const c = cfg({ sandboxCode: "return ...;" });
+    const res = await dispatch(makeEvent(), [c], SETTINGS, sandbox);
+    expect(res).toHaveLength(1);
+    expect(res[0].sandboxOutput).toEqual({ fanOut: "nope" });
+  });
+
+  it("treats a bare array sandbox result as a single row (NOT fan-out)", async () => {
+    const sandbox = vi.fn(async () => ({ result: [1, 2, 3] }));
+    const c = cfg({ sandboxCode: "return ...;" });
+    const res = await dispatch(makeEvent(), [c], SETTINGS, sandbox);
+    expect(res).toHaveLength(1);
+    expect(res[0].sandboxOutput).toEqual([1, 2, 3]);
+  });
+
+  it("does not fan out on sandbox error", async () => {
+    const sandbox = vi.fn(async () => ({ error: "boom" }));
+    const c = cfg({ sandboxCode: "return ...;" });
+    const res = await dispatch(makeEvent(), [c], SETTINGS, sandbox);
+    expect(res).toHaveLength(1);
+    expect(res[0].error?.stage).toBe("sandbox");
+  });
 });
