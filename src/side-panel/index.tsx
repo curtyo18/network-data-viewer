@@ -42,9 +42,18 @@ function App() {
   }, []);
 
   async function toggleShowRaw() {
-    const next = { ...settings, showRaw: !settings.showRaw };
-    setSettings(next);
-    await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
+    let next: Settings | null = null;
+    setSettings(prev => {
+      next = { ...prev, showRaw: !prev.showRaw };
+      return next;
+    });
+    if (next === null) return;
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
+    } catch (e) {
+      console.error("[settings] failed to persist showRaw toggle", e);
+      setSettings(prev => ({ ...prev, showRaw: !prev.showRaw }));  // revert
+    }
   }
 
   return (
