@@ -7,6 +7,6 @@ export const meta: AnalyserMeta = {
   urlPattern: "celebrus\\.",
   source: "reqBody",
   dsl: [{ op: "json-parse" }],
-  seedVersion: 1,
+  seedVersion: 2,
   createdAt: 1737000000000,
 };
