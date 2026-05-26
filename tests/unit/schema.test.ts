@@ -74,3 +74,32 @@ describe("AnalyserConfigArraySchema", () => {
     expect(() => AnalyserConfigArraySchema.parse([baseConfig])).not.toThrow();
   });
 });
+
+describe("AnalyserConfigSchema seedVersion", () => {
+  it("accepts a non-negative integer seedVersion", () => {
+    expect(() =>
+      AnalyserConfigSchema.parse({
+        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        dsl: [], createdAt: 0, seedVersion: 2,
+      })
+    ).not.toThrow();
+  });
+
+  it("accepts a config with no seedVersion (back-compat)", () => {
+    expect(() =>
+      AnalyserConfigSchema.parse({
+        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        dsl: [], createdAt: 0,
+      })
+    ).not.toThrow();
+  });
+
+  it("rejects a negative seedVersion", () => {
+    expect(() =>
+      AnalyserConfigSchema.parse({
+        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        dsl: [], createdAt: 0, seedVersion: -1,
+      })
+    ).toThrow();
+  });
+});

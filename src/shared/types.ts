@@ -39,6 +39,7 @@ export type AnalyserConfig = {
   source: AnalyserSource;
   dsl: DslStep[];
   sandboxCode?: string;
+  seedVersion?: number;
   createdAt: number;
 };
 
