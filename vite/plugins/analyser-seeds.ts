@@ -2,7 +2,7 @@ import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { transform } from "esbuild";
 import vm from "node:vm";
-import type { Plugin } from "vite";
+import type { ModuleNode, Plugin } from "vite";
 
 const VIRTUAL_ID = "virtual:analyser-seeds";
 const RESOLVED_VIRTUAL_ID = "\0" + VIRTUAL_ID;
@@ -28,7 +28,7 @@ export function analyserSeeds(opts: AnalyserSeedsOptions): Plugin {
       if (ctx.file.startsWith(opts.examplesDir) && /\.(meta|sandbox)\.ts$/.test(ctx.file)) {
         const mod = ctx.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_ID);
         if (mod) ctx.server.moduleGraph.invalidateModule(mod);
-        return [mod].filter(Boolean) as never;
+        return [mod].filter(Boolean) as ModuleNode[];
       }
     },
   };
@@ -77,6 +77,11 @@ export async function extractSandboxBody(sandboxPath: string): Promise<string> {
     throw new Error(`analyser-seeds: ${sandboxPath} default export must be a function named 'sandbox' (got '${fn.name}')`);
   }
   const source = fn.toString();
+  if (!source.trimStart().startsWith("function")) {
+    throw new Error(
+      `analyser-seeds: ${sandboxPath} default export must be a function declaration (function sandbox(...) { ... }), not an arrow function or method shorthand`
+    );
+  }
   const openIdx = source.indexOf("{");
   const closeIdx = source.lastIndexOf("}");
   if (openIdx < 0 || closeIdx < 0 || closeIdx < openIdx) {

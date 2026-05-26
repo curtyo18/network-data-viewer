@@ -31,4 +31,10 @@ describe("analyser-seeds plugin", () => {
       extractSandboxBody(path.join(FIXTURE_DIR, "bad-name.sandbox.ts"))
     ).rejects.toThrow(/must be a function named 'sandbox'/);
   });
+
+  it("throws when default export is an arrow function (not a function declaration)", async () => {
+    await expect(
+      extractSandboxBody(path.join(FIXTURE_DIR, "arrow.sandbox.ts"))
+    ).rejects.toThrow(/must be a function declaration/);
+  });
 });
