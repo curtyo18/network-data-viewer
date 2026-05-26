@@ -3,6 +3,8 @@ import * as fs from "node:fs/promises";
 import { transform } from "esbuild";
 import vm from "node:vm";
 import type { ModuleNode, Plugin } from "vite";
+import type { AnalyserConfig } from "@/shared/types";
+import { AnalyserConfigSchema } from "@/shared/schema";
 
 const VIRTUAL_ID = "virtual:analyser-seeds";
 const RESOLVED_VIRTUAL_ID = "\0" + VIRTUAL_ID;
@@ -34,19 +36,25 @@ export function analyserSeeds(opts: AnalyserSeedsOptions): Plugin {
   };
 }
 
-export async function buildAllSeeds(examplesDir: string) {
+export async function buildAllSeeds(examplesDir: string): Promise<AnalyserConfig[]> {
   const entries = await fs.readdir(examplesDir);
   const metaFiles = entries.filter(e => e.endsWith(".meta.ts"));
-  const out = [];
+  const out: AnalyserConfig[] = [];
   for (const metaFile of metaFiles.sort()) {
     const prefix = metaFile.slice(0, -".meta.ts".length);
     const metaPath = path.join(examplesDir, metaFile);
     const sandboxPath = path.join(examplesDir, `${prefix}.sandbox.ts`);
     const meta = await loadMeta(metaPath);
     const hasSandbox = await fileExists(sandboxPath);
-    const seed: Record<string, unknown> = { ...meta };
+    const seed: AnalyserConfig = { ...(meta as AnalyserConfig) };
     if (hasSandbox) seed.sandboxCode = await extractSandboxBody(sandboxPath);
-    out.push(seed);
+    const parsed = AnalyserConfigSchema.safeParse(seed);
+    if (!parsed.success) {
+      throw new Error(
+        `analyser-seeds: ${metaPath} does not match AnalyserConfigSchema — ${parsed.error.message}`
+      );
+    }
+    out.push(parsed.data);
   }
   return out;
 }
