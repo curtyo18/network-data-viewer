@@ -11,6 +11,4 @@ export const MSG = {
 
 export const PORT_NAME = "dataviewer-events";
 
-export const SETUP_EVENT = "__dvw_setup__";
-
 export const SHARE_PREFIX = "dvw:1:";

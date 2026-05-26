@@ -10,10 +10,10 @@ const fixtureHtml = readFileSync(path.resolve(__dirname, "fixtures/test-page.htm
 test("captures fetch to GA4 and renders in side panel", async () => {
   const ctx = await launchWithExtension();
   try {
-    await ctx.route("**/test-fixture.local/**", async (route) => {
+    await ctx.route(/test-fixture\.local/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
     });
-    await ctx.route("**/google-analytics.com/g/collect**", async (route) => {
+    await ctx.route(/google-analytics\.com\/g\/collect/, async (route) => {
       await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
     });
 

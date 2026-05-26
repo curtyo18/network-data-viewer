@@ -2,8 +2,11 @@
   if ((window as unknown as { __DVW_PATCHED__?: boolean }).__DVW_PATCHED__) return;
   (window as unknown as { __DVW_PATCHED__?: boolean }).__DVW_PATCHED__ = true;
 
-  const channel = new MessageChannel();
-  window.dispatchEvent(new CustomEvent("__dvw_setup__", { detail: channel.port2 }));
+  // Cross-world bridge: post directly to window.message; ISOLATED bridge listens.
+  // Avoids the MAIN/ISOLATED setup-event race that affects MessageChannel handoff at document_start.
+  const send = (event: unknown): void => {
+    window.postMessage({ __dvw_event: event }, "*");
+  };
 
   const MAX_BODY = 5 * 1024 * 1024;
 
@@ -37,7 +40,7 @@
       const resBodyText = await resClone.text().catch(() => null);
       const reqClipped = clip(reqBody);
       const resClipped = clip(resBodyText);
-      channel.port1.postMessage({
+      send({
         id: crypto.randomUUID(),
         ts: Date.now(),
         source: "fetch",
@@ -86,7 +89,7 @@
         const resBody = typeof this.responseText === "string" ? this.responseText : null;
         const reqClipped = clip(reqBody);
         const resClipped = clip(resBody);
-        channel.port1.postMessage({
+        send({
           id: crypto.randomUUID(),
           ts: Date.now(),
           source: "xhr",
@@ -111,7 +114,7 @@
     try {
       const bodyText = typeof data === "string" ? data : data ? "[non-string body]" : null;
       const clipped = clip(bodyText);
-      channel.port1.postMessage({
+      send({
         id: crypto.randomUUID(),
         ts: Date.now(),
         source: "beacon",
@@ -138,7 +141,7 @@
       this.addEventListener("message", (ev: MessageEvent) => {
         const data = typeof ev.data === "string" ? ev.data : null;
         const clipped = clip(data);
-        channel.port1.postMessage({
+        send({
           id: crypto.randomUUID(), ts: Date.now(), source: "ws-recv",
           method: "", url: u, reqHeaders: {}, reqBody: null,
           resStatus: null, resHeaders: {}, resBody: clipped.body,
@@ -149,7 +152,7 @@
     send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
       const dataStr = typeof data === "string" ? data : "[binary]";
       const clipped = clip(dataStr);
-      channel.port1.postMessage({
+      send({
         id: crypto.randomUUID(), ts: Date.now(), source: "ws-send",
         method: "", url: this.url, reqHeaders: {}, reqBody: clipped.body,
         resStatus: null, resHeaders: {}, resBody: null,
