@@ -3,8 +3,9 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    environment: "node",
-    include: ["tests/unit/**/*.test.ts"],
+    environment: "happy-dom",
+    include: ["tests/unit/**/*.test.{ts,tsx}"],
+    setupFiles: ["tests/setup-rtl.ts"],
     coverage: { reporter: ["text", "html"] }
   },
   resolve: { alias: { "@": path.resolve(__dirname, "src") } }
