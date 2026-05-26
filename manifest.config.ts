@@ -3,7 +3,7 @@ import { defineManifest } from "@crxjs/vite-plugin";
 export default defineManifest({
   manifest_version: 3,
   name: "Network Data Viewer",
-  version: "0.1.0",
+  version: "0.2.0",
   minimum_chrome_version: "116",
   description: "Configurable network-data capture and analysis.",
   permissions: ["storage", "sidePanel", "offscreen"],
