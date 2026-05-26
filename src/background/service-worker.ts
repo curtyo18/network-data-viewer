@@ -1,6 +1,7 @@
 import { Storage } from "./storage";
 import { dispatch } from "./dispatcher";
 import { OffscreenManager } from "./offscreen-manager";
+import { mergeSeeds } from "./merge-seeds";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
 import { STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
@@ -65,6 +66,13 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
 chrome.sidePanel?.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
-  if (reason !== "install") return;
-  await chrome.storage.local.set({ [STORAGE_KEY]: seeds });
+  if (reason !== "install" && reason !== "update") return;
+  try {
+    const existing = await storage.getAnalysers();
+    const merged = mergeSeeds(existing, seeds as AnalyserConfig[]);
+    await storage.setAnalysers(merged);
+    configCache = null; // force re-read on next dispatch
+  } catch (e) {
+    console.error("[seeds] migration failed", e);
+  }
 });
