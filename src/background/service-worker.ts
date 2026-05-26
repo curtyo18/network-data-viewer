@@ -4,9 +4,7 @@ import { OffscreenManager } from "./offscreen-manager";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
 import type { AnalyserConfig, CapturedEvent, MatchResult } from "@/shared/types";
-import ga4 from "@/examples/ga4.json";
-import contentsquare from "@/examples/contentsquare.json";
-import celebrus from "@/examples/celebrus.json";
+import seeds from "virtual:analyser-seeds";
 
 const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
@@ -63,6 +61,5 @@ chrome.sidePanel?.setPanelBehavior({ openPanelOnActionClick: true }).catch(() =>
 
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason !== "install") return;
-  const seeds: AnalyserConfig[] = [ga4, contentsquare, celebrus] as AnalyserConfig[];
   await chrome.storage.local.set({ [STORAGE_KEY]: seeds });
 });
