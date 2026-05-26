@@ -1,8 +1,12 @@
 import type { AnalyserConfig, CapturedEvent, MatchResult } from "@/shared/types";
+import type { Settings } from "@/shared/settings";
 import { runDsl } from "@/shared/dsl";
 
 export type SandboxRunner = (
-  analyserId: string, code: string, input: unknown
+  analyserId: string,
+  code: string,
+  input: unknown,
+  settings: Settings,
 ) => Promise<{ result: unknown } | { error: string }>;
 
 function selectInput(ev: CapturedEvent, source: AnalyserConfig["source"]): unknown {
@@ -16,7 +20,8 @@ function selectInput(ev: CapturedEvent, source: AnalyserConfig["source"]): unkno
 export async function dispatch(
   event: CapturedEvent,
   configs: AnalyserConfig[],
-  runSandbox: SandboxRunner
+  settings: Settings,
+  runSandbox: SandboxRunner,
 ): Promise<MatchResult[]> {
   const out: MatchResult[] = [];
   for (const cfg of configs) {
@@ -38,23 +43,44 @@ export async function dispatch(
     let sandboxOutput: unknown | undefined;
     let sbErr: string | undefined;
     if (!dslErr && cfg.sandboxCode) {
-      const r = await runSandbox(cfg.id, cfg.sandboxCode, dslOutput);
+      const r = await runSandbox(cfg.id, cfg.sandboxCode, dslOutput, settings);
       if ("result" in r) sandboxOutput = r.result;
       else sbErr = r.error;
     }
 
     const latencyMs = performance.now() - t0;
-    const result: MatchResult = {
+    const base: Omit<MatchResult, "sandboxOutput"> = {
       analyserId: cfg.id,
       analyserName: cfg.name,
       event,
       dslOutput,
-      sandboxOutput,
-      latencyMs
+      latencyMs,
     };
-    if (dslErr) result.error = { stage: "dsl", message: dslErr };
-    else if (sbErr) result.error = { stage: "sandbox", message: sbErr };
-    out.push(result);
+
+    if (dslErr) {
+      out.push({ ...base, sandboxOutput: undefined, error: { stage: "dsl", message: dslErr } });
+      continue;
+    }
+    if (sbErr) {
+      out.push({ ...base, sandboxOutput: undefined, error: { stage: "sandbox", message: sbErr } });
+      continue;
+    }
+    if (isFanOut(sandboxOutput)) {
+      for (const row of sandboxOutput.fanOut) {
+        out.push({ ...base, sandboxOutput: row });
+      }
+    } else {
+      out.push({ ...base, sandboxOutput });
+    }
   }
   return out;
+}
+
+function isFanOut(v: unknown): v is { fanOut: unknown[] } {
+  return (
+    !!v &&
+    typeof v === "object" &&
+    "fanOut" in v &&
+    Array.isArray((v as { fanOut: unknown }).fanOut)
+  );
 }

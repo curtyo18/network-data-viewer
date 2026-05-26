@@ -56,7 +56,7 @@ export class OffscreenManager {
     if (contexts.length > 0) await chrome.offscreen.closeDocument();
   }
 
-  run: SandboxRunner = async (analyserId, code, input) => {
+  run: SandboxRunner = async (analyserId, code, input, settings) => {
     await this.ensureAnalyser(analyserId, code);
     const requestId = crypto.randomUUID();
     return new Promise(resolve => {
@@ -66,7 +66,13 @@ export class OffscreenManager {
         resolve({ error: "timeout" });
       }, 1000);
       this.pending.set(requestId, { resolve, timer });
-      chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RUN_TRANSFORM, analyserId, requestId, input }).catch(e => {
+      chrome.runtime.sendMessage({
+        type: MSG.OFFSCREEN_RUN_TRANSFORM,
+        analyserId,
+        requestId,
+        input,
+        settings,
+      }).catch(e => {
         clearTimeout(timer);
         this.pending.delete(requestId);
         resolve({ error: `dispatch failed: ${(e as Error).message}` });
