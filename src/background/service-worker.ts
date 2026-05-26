@@ -2,6 +2,7 @@ import { Storage } from "./storage";
 import { dispatch, compileConfigs, type CompiledConfig } from "./dispatcher";
 import { OffscreenManager } from "./offscreen-manager";
 import { mergeSeeds } from "./merge-seeds";
+import { AnalyserErrorStore } from "./analyser-errors";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
 import { STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
@@ -11,6 +12,7 @@ import seeds from "virtual:analyser-seeds";
 const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
 const panelPorts = new Set<chrome.runtime.Port>();
+const errorStore = new AnalyserErrorStore();
 let configCache: CompiledConfig[] | null = null;
 let settingsCache: Settings | null = null;
 
@@ -29,15 +31,25 @@ chrome.storage.onChanged.addListener((changes, area) => {
     const oldById = new Map(oldConfigs.map(c => [c.id, c]));
     for (const cfg of newConfigs) {
       const prev = oldById.get(cfg.id);
-      if (prev?.sandboxCode !== cfg.sandboxCode) offscreen.invalidate(cfg.id);
+      if (prev?.sandboxCode !== cfg.sandboxCode) {
+        offscreen.invalidate(cfg.id);
+        errorStore.clear(cfg.id);
+      }
       oldById.delete(cfg.id);
     }
-    for (const removedId of oldById.keys()) offscreen.invalidate(removedId);
+    for (const removedId of oldById.keys()) {
+      offscreen.invalidate(removedId);
+      errorStore.clear(removedId);
+    }
   }
   if (STORAGE_KEY_SETTINGS in changes) settingsCache = null;
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === MSG.GET_ANALYSER_ERRORS) {
+    sendResponse({ errors: errorStore.snapshot() });
+    return false;
+  }
   if (msg?.type !== MSG.CAPTURED_EVENT) return false;
   void handleCapturedEvent(msg.payload, sender).then(() => sendResponse({ ok: true }));
   return true;
@@ -54,6 +66,10 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
   if (configCache === null) configCache = compileConfigs(await storage.getAnalysers());
   if (settingsCache === null) settingsCache = await storage.getSettings();
   const results: MatchResult[] = await dispatch(enriched, configCache, settingsCache, offscreen.run);
+
+  for (const r of results) {
+    if (r.error) errorStore.record(r.analyserId, r.error);
+  }
 
   if (results.length === 0 || panelPorts.size === 0) return;
   for (const r of results) {
