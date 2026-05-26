@@ -1,7 +1,9 @@
 import { Storage } from "./storage";
-import { dispatch } from "./dispatcher";
+import { dispatch, compileConfigs, type CompiledConfig } from "./dispatcher";
 import { OffscreenManager } from "./offscreen-manager";
 import { mergeSeeds } from "./merge-seeds";
+import { AnalyserErrorStore } from "./analyser-errors";
+import { ResultBuffer } from "./result-buffer";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
 import { STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
@@ -11,13 +13,19 @@ import seeds from "virtual:analyser-seeds";
 const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
 const panelPorts = new Set<chrome.runtime.Port>();
-let configCache: AnalyserConfig[] | null = null;
+const errorStore = new AnalyserErrorStore();
+const resultBuffer = new ResultBuffer();
+let configCache: CompiledConfig[] | null = null;
 let settingsCache: Settings | null = null;
 
 chrome.runtime.onConnect.addListener(port => {
   if (port.name !== PORT_NAME) return;
   panelPorts.add(port);
   port.onDisconnect.addListener(() => panelPorts.delete(port));
+  // Replay buffered results so a panel opened after the fact sees recent activity.
+  for (const r of resultBuffer.snapshot()) {
+    try { port.postMessage({ type: MSG.MATCH_RESULT, payload: r }); } catch { /* ignore */ }
+  }
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -25,19 +33,29 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (STORAGE_KEY in changes) {
     const oldConfigs = (changes[STORAGE_KEY].oldValue as AnalyserConfig[] | undefined) ?? [];
     const newConfigs = (changes[STORAGE_KEY].newValue as AnalyserConfig[] | undefined) ?? [];
-    configCache = newConfigs;
+    configCache = compileConfigs(newConfigs);
     const oldById = new Map(oldConfigs.map(c => [c.id, c]));
     for (const cfg of newConfigs) {
       const prev = oldById.get(cfg.id);
-      if (prev?.sandboxCode !== cfg.sandboxCode) offscreen.invalidate(cfg.id);
+      if (prev?.sandboxCode !== cfg.sandboxCode) {
+        offscreen.invalidate(cfg.id);
+        errorStore.clear(cfg.id);
+      }
       oldById.delete(cfg.id);
     }
-    for (const removedId of oldById.keys()) offscreen.invalidate(removedId);
+    for (const removedId of oldById.keys()) {
+      offscreen.invalidate(removedId);
+      errorStore.clear(removedId);
+    }
   }
   if (STORAGE_KEY_SETTINGS in changes) settingsCache = null;
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === MSG.GET_ANALYSER_ERRORS) {
+    sendResponse({ errors: errorStore.snapshot() });
+    return false;
+  }
   if (msg?.type !== MSG.CAPTURED_EVENT) return false;
   void handleCapturedEvent(msg.payload, sender).then(() => sendResponse({ ok: true }));
   return true;
@@ -51,9 +69,14 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
     ? { ...event, originTab: { tabId: sender.tab.id, url: sender.tab.url ?? "" } }
     : event;
 
-  if (configCache === null) configCache = await storage.getAnalysers();
+  if (configCache === null) configCache = compileConfigs(await storage.getAnalysers());
   if (settingsCache === null) settingsCache = await storage.getSettings();
   const results: MatchResult[] = await dispatch(enriched, configCache, settingsCache, offscreen.run);
+
+  for (const r of results) {
+    if (r.error) errorStore.record(r.analyserId, r.error);
+    resultBuffer.push(r);
+  }
 
   if (results.length === 0 || panelPorts.size === 0) return;
   for (const r of results) {

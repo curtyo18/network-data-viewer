@@ -1,7 +1,8 @@
 import "./styles.css";
 import { createRoot } from "react-dom/client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEventStream } from "./lib/port";
+import { useExport } from "./lib/use-export";
 import { EventList } from "./components/EventList";
 import { AnalyserManager } from "./components/AnalyserManager";
 import { ConfigEditor } from "./components/ConfigEditor";
@@ -20,6 +21,19 @@ function App() {
   const { events, clear: clearEvents } = useEventStream();
   const [mode, setMode] = useState<Mode>({ kind: "events" });
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [filter, setFilter] = useState("");
+  const filterInputRef = useRef<HTMLInputElement>(null);
+  const { copy: exportCopy } = useExport();
+
+  const filteredEvents = useMemo(() => {
+    if (!filter.trim()) return events;
+    const needle = filter.toLowerCase();
+    return events.filter(r =>
+      r.analyserName.toLowerCase().includes(needle) ||
+      r.event.method.toLowerCase().includes(needle) ||
+      r.event.url.toLowerCase().includes(needle)
+    );
+  }, [events, filter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +54,33 @@ function App() {
       chrome.storage.onChanged.removeListener(onChange);
     };
   }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const meta = e.ctrlKey || e.metaKey;
+      if (e.key === "Escape" && (mode.kind === "edit" || mode.kind === "import")) {
+        e.preventDefault();
+        setMode({ kind: "manage" });
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "l" && mode.kind === "events") {
+        e.preventDefault();
+        clearEvents();
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "f" && mode.kind === "events") {
+        if (filterInputRef.current) { e.preventDefault(); filterInputRef.current.focus(); }
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "e" && mode.kind === "events") {
+        e.preventDefault();
+        void exportCopy();
+        return;
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, clearEvents, exportCopy]);
 
   async function toggleShowRaw() {
     const previous = settings;
@@ -70,6 +111,7 @@ function App() {
               className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200"
               onClick={clearEvents}
               aria-label="Clear events"
+              title="Clear (Ctrl+L)"
             >
               Clear
             </button>
@@ -78,8 +120,22 @@ function App() {
           <ExportButton />
         </div>
       </header>
+      {mode.kind === "events" && events.length > 0 && (
+        <div className="px-2 pt-2 pb-1 border-b border-slate-800">
+          <input
+            ref={filterInputRef}
+            type="text"
+            placeholder="filter url / method / analyser…"
+            className="w-full bg-slate-900 border border-slate-700 px-2 py-1 rounded text-xs font-mono"
+            value={filter}
+            onChange={e => setFilter(e.target.value)}
+            aria-label="Filter events"
+            data-testid="event-filter"
+          />
+        </div>
+      )}
       <main className="flex-1 overflow-hidden">
-        {mode.kind === "events" && <EventList events={events} />}
+        {mode.kind === "events" && <EventList events={filteredEvents} />}
         {mode.kind === "manage" && <AnalyserManager onEdit={cfg => setMode({ kind: "edit", cfg })} />}
         {mode.kind === "edit" && <ConfigEditor initial={mode.cfg} onClose={() => setMode({ kind: "manage" })} />}
         {mode.kind === "import" && <ImportDialog onClose={() => setMode({ kind: "manage" })} />}

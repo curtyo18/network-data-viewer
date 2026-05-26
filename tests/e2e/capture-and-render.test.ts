@@ -177,10 +177,11 @@ test("settings showRaw toggle is reflected in sandbox analyser output", async ()
   }
 });
 
-// Documents current "silent drop" behaviour: MatchResults are emitted only to panel ports
-// connected at dispatch time. If the panel isn't open, results vanish — no buffering today.
-// If this test starts failing, someone added buffering — update it to assert replay instead.
-test("panel-not-open: results are silently dropped when panel port is not connected", async () => {
+// Documents buffered-replay behaviour: MatchResults are held in the SW's ResultBuffer
+// (up to 100 entries) regardless of whether a panel port is connected. When a panel
+// connects it receives a snapshot of buffered results, so events fired before the panel
+// opens are still visible.
+test("panel-not-open: results are buffered and replayed when the panel connects", async () => {
   // This test deliberately fires the fetch BEFORE opening the panel, so we cannot use
   // setupHarness (which opens the panel first). We keep setup explicit but use the
   // named wait helpers instead of bare setTimeout / waitForTimeout calls.
@@ -226,7 +227,7 @@ test("panel-not-open: results are silently dropped when panel port is not connec
     // we've already waited for the response; dispatch happens after that on the SW side.
     await page.waitForTimeout(POST_DISPATCH_SLACK_MS);
 
-    // NOW open the panel — the result should not appear (it was dropped)
+    // NOW open the panel — the buffered result should be replayed on connect
     const panel = await ctx.newPage();
     panel.on("console", (msg) => console.log("[panel]", msg.text()));
     panel.on("pageerror", (err) => console.log("[panel error]", err.message));
@@ -234,7 +235,56 @@ test("panel-not-open: results are silently dropped when panel port is not connec
     await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
     await waitForPanelPortReady(panel);
 
-    await expect(panel.locator("text=GA4")).toHaveCount(0);
+    await expect(panel.locator("text=GA4").first()).toBeVisible({ timeout: 5000 });
+  } finally {
+    await ctx.close();
+  }
+});
+
+test("filter bar narrows visible rows by analyser name", async () => {
+  // Two analysers both match the same GA4 URL. One fetch fires — both produce a row.
+  // Typing one analyser's name into the filter leaves only that row visible.
+  const { ctx, panel, page } = await setupHarness({
+    seed: [
+      {
+        id: "test-filter-a",
+        name: "FilterAlpha",
+        enabled: true,
+        urlPattern: "google-analytics\\.com/g/collect",
+        source: "url",
+        dsl: [{ op: "query-parse" }],
+        createdAt: 0
+      },
+      {
+        id: "test-filter-b",
+        name: "FilterBeta",
+        enabled: true,
+        urlPattern: "google-analytics\\.com/g/collect",
+        source: "url",
+        dsl: [{ op: "query-parse" }],
+        createdAt: 0
+      }
+    ]
+  });
+  try {
+    await ctx.route(/test-fixture\.local/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    await ctx.route(/google-analytics\.com\/g\/collect/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+    });
+
+    await page.goto("https://test-fixture.local/");
+    await page.click("#fire-fetch");
+
+    // Both analyser rows should appear before filtering
+    await expect(panel.locator("text=FilterAlpha").first()).toBeVisible({ timeout: 10000 });
+    await expect(panel.locator("text=FilterBeta").first()).toBeVisible();
+
+    // Type into the filter — only FilterAlpha rows should remain
+    await panel.getByPlaceholder("filter url / method / analyser…").fill("FilterAlpha");
+    await expect(panel.locator("text=FilterAlpha").first()).toBeVisible();
+    await expect(panel.locator("text=FilterBeta")).toHaveCount(0, { timeout: 3000 });
   } finally {
     await ctx.close();
   }

@@ -7,5 +7,7 @@ window.addEventListener("message", (ev: MessageEvent) => {
   if (raw === undefined) return;
   const parsed = CapturedEventSchema.safeParse(raw);
   if (!parsed.success) return;
-  chrome.runtime.sendMessage({ type: MSG.CAPTURED_EVENT, payload: parsed.data }).catch(() => {});
+  try {
+    chrome.runtime.sendMessage({ type: MSG.CAPTURED_EVENT, payload: parsed.data }).catch(() => {});
+  } catch { /* SW context invalidated — drop silently */ }
 });

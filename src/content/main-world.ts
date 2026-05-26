@@ -1,3 +1,5 @@
+import { encodeBody } from "./encode-body";
+
 (() => {
   if ((window as unknown as { __DVW_PATCHED__?: boolean }).__DVW_PATCHED__) return;
   (window as unknown as { __DVW_PATCHED__?: boolean }).__DVW_PATCHED__ = true;
@@ -17,15 +19,6 @@
     return { body: new TextDecoder("utf-8").decode(enc.slice(0, MAX_BODY)), truncated: true };
   }
 
-  async function readReqBody(init: RequestInit | undefined, req: Request): Promise<string | null> {
-    try {
-      if (init?.body && typeof init.body === "string") return init.body;
-      if (req.bodyUsed) return null;
-      const cloned = req.clone();
-      return await cloned.text();
-    } catch { return null; }
-  }
-
   async function emitFetch(input: RequestInfo | URL, init: RequestInit | undefined, response: Response): Promise<void> {
     try {
       const req = new Request(input as RequestInfo, init);
@@ -33,12 +26,16 @@
       const method = req.method;
       const reqHeaders: Record<string, string> = {};
       req.headers.forEach((v, k) => { reqHeaders[k] = v; });
-      const reqBody = await readReqBody(init, req);
+
+      // Encode the request body with binary support
+      const rawBody = init?.body ?? null;
+      const encoded = await encodeBody(rawBody, MAX_BODY);
+      const reqClipped = clip(encoded.body);
+
       const resClone = response.clone();
       const resHeaders: Record<string, string> = {};
       resClone.headers.forEach((v, k) => { resHeaders[k] = v; });
       const resBodyText = await resClone.text().catch(() => null);
-      const reqClipped = clip(reqBody);
       const resClipped = clip(resBodyText);
       send({
         id: crypto.randomUUID(),
@@ -48,6 +45,7 @@
         url,
         reqHeaders,
         reqBody: reqClipped.body,
+        reqBodyEncoding: encoded.encoding,
         resStatus: response.status,
         resHeaders,
         resBody: resClipped.body,
@@ -77,32 +75,38 @@
 
   XHR.prototype.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
     const meta = xhrMeta.get(this) ?? { method: "GET", url: "" };
-    const reqBody = typeof body === "string" ? body : body ? "[non-string body]" : null;
+
+    // Kick off async body encoding; will be resolved inside the loadend listener.
+    const bodyEncodeP = encodeBody(body ?? null, MAX_BODY);
+
     this.addEventListener("loadend", () => {
-      try {
-        const reqHeaders: Record<string, string> = {};
-        const resHeaders: Record<string, string> = {};
-        (this.getAllResponseHeaders() || "").split(/\r?\n/).forEach(line => {
-          const idx = line.indexOf(":");
-          if (idx > 0) resHeaders[line.slice(0, idx).trim().toLowerCase()] = line.slice(idx + 1).trim();
-        });
-        const resBody = typeof this.responseText === "string" ? this.responseText : null;
-        const reqClipped = clip(reqBody);
-        const resClipped = clip(resBody);
-        send({
-          id: crypto.randomUUID(),
-          ts: Date.now(),
-          source: "xhr",
-          method: meta.method,
-          url: meta.url,
-          reqHeaders,
-          reqBody: reqClipped.body,
-          resStatus: this.status || null,
-          resHeaders,
-          resBody: resClipped.body,
-          truncated: reqClipped.truncated || resClipped.truncated || undefined
-        });
-      } catch { /* ignore */ }
+      bodyEncodeP.then(encoded => {
+        try {
+          const reqHeaders: Record<string, string> = {};
+          const resHeaders: Record<string, string> = {};
+          (this.getAllResponseHeaders() || "").split(/\r?\n/).forEach(line => {
+            const idx = line.indexOf(":");
+            if (idx > 0) resHeaders[line.slice(0, idx).trim().toLowerCase()] = line.slice(idx + 1).trim();
+          });
+          const resBody = typeof this.responseText === "string" ? this.responseText : null;
+          const reqClipped = clip(encoded.body);
+          const resClipped = clip(resBody);
+          send({
+            id: crypto.randomUUID(),
+            ts: Date.now(),
+            source: "xhr",
+            method: meta.method,
+            url: meta.url,
+            reqHeaders,
+            reqBody: reqClipped.body,
+            reqBodyEncoding: encoded.encoding,
+            resStatus: this.status || null,
+            resHeaders,
+            resBody: resClipped.body,
+            truncated: reqClipped.truncated || resClipped.truncated || undefined
+          });
+        } catch { /* ignore */ }
+      }).catch(() => { /* ignore encode errors */ });
     });
     return origSend.call(this, body as XMLHttpRequestBodyInit | null | undefined);
   };
@@ -111,23 +115,26 @@
   const origSendBeacon = navigator.sendBeacon.bind(navigator);
   const patchedSendBeacon: typeof navigator.sendBeacon = (url, data) => {
     const ok = origSendBeacon(url, data);
-    try {
-      const bodyText = typeof data === "string" ? data : data ? "[non-string body]" : null;
-      const clipped = clip(bodyText);
-      send({
-        id: crypto.randomUUID(),
-        ts: Date.now(),
-        source: "beacon",
-        method: "POST",
-        url: typeof url === "string" ? url : url.toString(),
-        reqHeaders: {},
-        reqBody: clipped.body,
-        resStatus: null,
-        resHeaders: {},
-        resBody: null,
-        truncated: clipped.truncated || undefined
-      });
-    } catch { /* ignore */ }
+    // Async encode; emit when resolved (page does not wait on us)
+    encodeBody(data ?? null, MAX_BODY).then(encoded => {
+      try {
+        const clipped = clip(encoded.body);
+        send({
+          id: crypto.randomUUID(),
+          ts: Date.now(),
+          source: "beacon",
+          method: "POST",
+          url: typeof url === "string" ? url : url.toString(),
+          reqHeaders: {},
+          reqBody: clipped.body,
+          reqBodyEncoding: encoded.encoding,
+          resStatus: null,
+          resHeaders: {},
+          resBody: null,
+          truncated: clipped.truncated || undefined
+        });
+      } catch { /* ignore */ }
+    }).catch(() => { /* ignore */ });
     return ok;
   };
   Object.defineProperty(Navigator.prototype, "sendBeacon", { value: patchedSendBeacon, writable: true, configurable: true });
@@ -150,14 +157,20 @@
       });
     }
     send(data: string | ArrayBufferLike | Blob | ArrayBufferView) {
-      const dataStr = typeof data === "string" ? data : "[binary]";
-      const clipped = clip(dataStr);
-      send({
-        id: crypto.randomUUID(), ts: Date.now(), source: "ws-send",
-        method: "", url: this.url, reqHeaders: {}, reqBody: clipped.body,
-        resStatus: null, resHeaders: {}, resBody: null,
-        truncated: clipped.truncated || undefined
-      });
+      // Async encode; emit when resolved
+      encodeBody(data, MAX_BODY).then(encoded => {
+        try {
+          const clipped = clip(encoded.body);
+          send({
+            id: crypto.randomUUID(), ts: Date.now(), source: "ws-send",
+            method: "", url: this.url, reqHeaders: {},
+            reqBody: clipped.body,
+            reqBodyEncoding: encoded.encoding,
+            resStatus: null, resHeaders: {}, resBody: null,
+            truncated: clipped.truncated || undefined
+          });
+        } catch { /* ignore */ }
+      }).catch(() => { /* ignore */ });
       return super.send(data);
     }
   }

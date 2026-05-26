@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
+    "@tanstack/react-virtual": "^3.13.26",
     "lz-string": "^1.5.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -23,6 +24,9 @@
     "@crxjs/vite-plugin": "^2.0.0-beta.25",
     "@playwright/test": "^1.46.0",
     "@resvg/resvg-js": "^2.6.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/chrome": "^0.0.270",
     "@types/node": "^25.9.1",
     "@types/react": "^18.3.3",
@@ -30,6 +34,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "archiver": "^7.0.1",
     "autoprefixer": "^10.4.20",
+    "happy-dom": "^20.9.0",
     "postcss": "^8.4.41",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4",

@@ -8,6 +8,7 @@ export type CapturedEvent = {
   url: string;
   reqHeaders: Record<string, string>;
   reqBody: string | null;
+  reqBodyEncoding?: "text" | "base64";
   resStatus: number | null;
   resHeaders: Record<string, string>;
   resBody: string | null;
@@ -41,6 +42,12 @@ export type AnalyserConfig = {
   sandboxCode?: string;
   seedVersion?: number;
   createdAt: number;
+};
+
+export type AnalyserError = {
+  ts: number;
+  stage: "dsl" | "sandbox";
+  message: string;
 };
 
 export type MatchResult = {
