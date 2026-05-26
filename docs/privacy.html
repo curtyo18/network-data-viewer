@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Data Viewer — Privacy Policy</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 1rem;
+      line-height: 1.7;
+      padding: 3rem 1.5rem;
+    }
+    .page { max-width: 680px; margin: 0 auto; }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 2.5rem;
+    }
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #a78bfa;
+      margin: 2rem 0 0.6rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid #1e293b;
+    }
+    p { margin-bottom: 0.8rem; color: #cbd5e1; }
+    ul {
+      padding-left: 1.4rem;
+      margin-bottom: 0.8rem;
+      color: #cbd5e1;
+    }
+    ul li { margin-bottom: 0.4rem; }
+    code {
+      background: #1e293b;
+      color: #7dd3fc;
+      padding: 0.1em 0.4em;
+      border-radius: 0.25rem;
+      font-size: 0.875em;
+      font-family: ui-monospace, monospace;
+    }
+    a { color: #818cf8; }
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #1e293b;
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Network Data Viewer</h1>
+    <p class="subtitle">Privacy Policy &mdash; Last updated 2026-05-26</p>
+
+    <p>
+      Network Data Viewer does <strong>not</strong> collect, transmit, or store any user data
+      beyond what you explicitly configure. Analyser settings are saved in
+      <code>chrome.storage.local</code> on your own device and are never sent off-device by
+      this extension.
+    </p>
+
+    <h2>What the extension reads</h2>
+    <p>
+      To observe outgoing network traffic, the extension injects a content script that
+      monkey-patches four browser APIs in the page's JavaScript environment:
+    </p>
+    <ul>
+      <li><code>fetch</code></li>
+      <li><code>XMLHttpRequest</code></li>
+      <li><code>navigator.sendBeacon</code></li>
+      <li><code>WebSocket</code></li>
+    </ul>
+    <p>
+      When one of these APIs is called by the page, the extension captures a copy of the
+      request (URL, method, headers, body) and, where available, the response (status,
+      headers, body). This captured data is processed locally — entirely within your browser —
+      and displayed in the extension's side panel. It is never sent to any remote server,
+      analytics service, or third party.
+    </p>
+
+    <h2>What the extension does NOT do</h2>
+    <ul>
+      <li>Does not read cookies, passwords, or form fields outside of network request bodies.</li>
+      <li>Does not modify, redirect, or block any network request.</li>
+      <li>Does not make any external network calls of its own.</li>
+      <li>Does not access your browsing history.</li>
+      <li>Does not run any remote code. All logic executes locally; sandbox code you author
+          runs inside a CSP-isolated iframe with no <code>chrome.*</code> access, no network,
+          and no cookies.</li>
+    </ul>
+
+    <h2>Storage</h2>
+    <p>
+      The extension stores analyser configurations (URL patterns, DSL chains, sandbox code
+      snippets, and the "show raw" toggle) in <code>chrome.storage.local</code>.
+      This storage is sandboxed per-extension and is not shared with websites or other
+      extensions. It is not synced to Google's servers unless you have separately enabled
+      Chrome Sync for extension data in your browser settings.
+    </p>
+    <p>
+      Captured network events are held only in the side panel's in-memory state for the
+      duration of the browser session. They are never written to disk and disappear when the
+      panel or the browser is closed.
+    </p>
+
+    <h2>Permissions</h2>
+    <p>
+      The extension declares the following permissions. See
+      <a href="permissions-justification.md">permissions-justification.md</a> for the full
+      per-permission rationale provided to the Chrome Web Store.
+    </p>
+    <ul>
+      <li>
+        <strong><code>storage</code></strong> — save your analyser configs and settings across
+        browser sessions.
+      </li>
+      <li>
+        <strong><code>sidePanel</code></strong> — render the live event tail in Chrome's side
+        panel surface.
+      </li>
+      <li>
+        <strong><code>offscreen</code></strong> — host the offscreen document that runs
+        sandboxed analyser code inside CSP-isolated iframes (required by Chrome MV3 because a
+        service worker cannot run user-authored code directly).
+      </li>
+      <li>
+        <strong>Host access (<code>&lt;all_urls&gt;</code>)</strong> — inject content scripts
+        into pages so that <code>fetch</code>, <code>XMLHttpRequest</code>,
+        <code>sendBeacon</code>, and <code>WebSocket</code> can be intercepted. Without this,
+        the extension cannot observe network traffic on the pages you visit.
+      </li>
+    </ul>
+
+    <h2>Contact</h2>
+    <!-- TODO: maintainer contact before public flip -->
+    <p>For questions about this policy, please open an issue on the project's GitHub repository.</p>
+
+    <div class="footer">
+      Network Data Viewer is an open-source project. No data leaves your browser.
+    </div>
+  </div>
+</body>
+</html>

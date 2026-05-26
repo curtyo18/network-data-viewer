@@ -1,0 +1,242 @@
+<!-- Web Store promo asset: render at 1280x800 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280">
+  <title>Network Data Viewer — Side Panel Preview</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#0f1829',
+              900: '#0f172a',
+              950: '#080e1a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body { margin: 0; padding: 0; width: 1280px; height: 800px; overflow: hidden; }
+    .json-key   { color: #7dd3fc; }
+    .json-str   { color: #86efac; }
+    .json-num   { color: #fbbf24; }
+    .json-bool  { color: #f472b6; }
+    .badge      { font-size: 0.65rem; padding: 1px 6px; border-radius: 9999px; font-weight: 600; letter-spacing: 0.03em; }
+    .scroll-none { overflow: hidden; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-200 flex" style="width:1280px;height:800px;">
+
+  <!-- ─── Left: Analyser list ──────────────────────────────────────────── -->
+  <div class="flex flex-col bg-slate-950 border-r border-slate-800" style="width:280px;min-width:280px;">
+    <!-- Header -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
+      <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">Analysers</span>
+      <button class="text-violet-400 hover:text-violet-300 text-xs font-medium">+ Add</button>
+    </div>
+
+    <!-- Analyser items -->
+    <div class="flex-1 overflow-hidden divide-y divide-slate-800/60">
+
+      <!-- GA4 — active -->
+      <div class="flex items-center gap-3 px-4 py-3 bg-violet-900/20 border-l-2 border-violet-500">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-100 truncate">GA4</div>
+          <div class="text-xs text-slate-500 truncate font-mono">/g/collect</div>
+        </div>
+        <span class="badge bg-emerald-900/50 text-emerald-400">ON</span>
+      </div>
+
+      <!-- ContentSquare -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/40">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-100 truncate">ContentSquare</div>
+          <div class="text-xs text-slate-500 truncate font-mono">t\.contentsquare\.net</div>
+        </div>
+        <span class="badge bg-emerald-900/50 text-emerald-400">ON</span>
+      </div>
+
+      <!-- Celebrus -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/40">
+        <div class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-400 truncate">Celebrus</div>
+          <div class="text-xs text-slate-600 truncate font-mono">celebrus</div>
+        </div>
+        <span class="badge bg-slate-800 text-slate-500">OFF</span>
+      </div>
+
+      <!-- Custom analyser with error badge -->
+      <div class="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/40">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium text-slate-100 truncate">Segment</div>
+          <div class="text-xs text-slate-500 truncate font-mono">api\.segment\.io</div>
+        </div>
+        <span class="badge bg-red-900/60 text-red-400">ERR</span>
+      </div>
+
+    </div>
+
+    <!-- Import / Export footer -->
+    <div class="px-4 py-3 border-t border-slate-800 flex gap-2">
+      <button class="flex-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 rounded px-2 py-1.5">Import</button>
+      <button class="flex-1 text-xs text-slate-400 hover:text-slate-200 bg-slate-800 rounded px-2 py-1.5">Export</button>
+    </div>
+  </div>
+
+  <!-- ─── Right: Event list ─────────────────────────────────────────────── -->
+  <div class="flex flex-col flex-1 min-w-0">
+
+    <!-- Panel header -->
+    <div class="flex items-center gap-3 px-4 py-2.5 border-b border-slate-800 bg-slate-950/80 flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-violet-500"></div>
+        <span class="text-sm font-semibold text-slate-100">Network Data Viewer</span>
+      </div>
+      <div class="flex-1"></div>
+      <!-- Filter bar -->
+      <div class="flex items-center gap-1.5 bg-slate-800/60 border border-slate-700 rounded px-2.5 py-1" style="width:200px;">
+        <svg class="w-3 h-3 text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span class="text-xs text-slate-500">Filter events…</span>
+      </div>
+      <!-- Show raw toggle -->
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs text-slate-500">Show raw</span>
+        <div class="w-8 h-4 bg-slate-700 rounded-full relative">
+          <div class="w-3 h-3 bg-slate-400 rounded-full absolute top-0.5 left-0.5"></div>
+        </div>
+      </div>
+      <!-- Clear -->
+      <button class="text-xs text-slate-500 hover:text-slate-300 px-2 py-1 rounded hover:bg-slate-800">Clear</button>
+    </div>
+
+    <!-- Event count bar -->
+    <div class="px-4 py-1.5 bg-slate-950/40 border-b border-slate-800/60 flex items-center gap-3">
+      <span class="text-xs text-slate-500">24 events captured</span>
+      <span class="text-xs text-slate-700">·</span>
+      <span class="text-xs text-slate-500">3 analysers matched</span>
+    </div>
+
+    <!-- Event list -->
+    <div class="flex-1 overflow-hidden divide-y divide-slate-800/50">
+
+      <!-- Event 1 — GA4, expanded -->
+      <div class="px-4 py-3 bg-slate-800/20">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:07.441</span>
+          <span class="badge bg-violet-900/60 text-violet-300">GA4</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://www.google-analytics.com/g/collect?v=2&amp;tid=G-XYZ123</span>
+        </div>
+        <!-- JSON tree output -->
+        <div class="bg-slate-950 rounded border border-slate-800 px-3 py-2 font-mono text-xs leading-relaxed">
+          <div><span class="text-slate-500">{</span></div>
+          <div class="pl-4"><span class="json-key">"en"</span><span class="text-slate-500">: </span><span class="json-str">"page_view"</span><span class="text-slate-500">,</span></div>
+          <div class="pl-4"><span class="json-key">"ep"</span><span class="text-slate-500">: </span><span class="json-str">"home"</span><span class="text-slate-500">,</span></div>
+          <div class="pl-4"><span class="json-key">"ec"</span><span class="text-slate-500">: </span><span class="json-str">"engagement"</span><span class="text-slate-500">,</span></div>
+          <div class="pl-4"><span class="json-key">"ev"</span><span class="text-slate-500">: </span><span class="json-num">1</span></div>
+          <div><span class="text-slate-500">}</span></div>
+        </div>
+        <div class="flex items-center gap-3 mt-1.5">
+          <span class="text-xs text-slate-600">origin: https://example.com</span>
+          <span class="text-xs text-emerald-600/70">2.1 ms</span>
+        </div>
+      </div>
+
+      <!-- Event 2 — GA4, compact -->
+      <div class="px-4 py-3 hover:bg-slate-800/20 cursor-pointer">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:06.882</span>
+          <span class="badge bg-violet-900/60 text-violet-300">GA4</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://www.google-analytics.com/g/collect?v=2&amp;tid=G-XYZ123</span>
+          <div class="flex-1"></div>
+          <span class="text-xs text-slate-600">en=scroll</span>
+        </div>
+      </div>
+
+      <!-- Event 3 — ContentSquare -->
+      <div class="px-4 py-3 hover:bg-slate-800/20 cursor-pointer">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:05.213</span>
+          <span class="badge bg-cyan-900/60 text-cyan-300">ContentSquare</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://t.contentsquare.net/uxa/...</span>
+          <div class="flex-1"></div>
+          <span class="text-xs text-slate-600">3 hits</span>
+        </div>
+      </div>
+
+      <!-- Event 4 — GA4, compact -->
+      <div class="px-4 py-3 hover:bg-slate-800/20 cursor-pointer">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:04.100</span>
+          <span class="badge bg-violet-900/60 text-violet-300">GA4</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://www.google-analytics.com/g/collect?v=2&amp;tid=G-XYZ123</span>
+          <div class="flex-1"></div>
+          <span class="text-xs text-slate-600">en=click</span>
+        </div>
+      </div>
+
+      <!-- Event 5 — ContentSquare -->
+      <div class="px-4 py-3 hover:bg-slate-800/20 cursor-pointer">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:03.774</span>
+          <span class="badge bg-cyan-900/60 text-cyan-300">ContentSquare</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://t.contentsquare.net/uxa/...</span>
+          <div class="flex-1"></div>
+          <span class="text-xs text-slate-600">mousemove batch</span>
+        </div>
+      </div>
+
+      <!-- Event 6 — GA4 -->
+      <div class="px-4 py-3 hover:bg-slate-800/20 cursor-pointer">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:02.009</span>
+          <span class="badge bg-violet-900/60 text-violet-300">GA4</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://www.google-analytics.com/g/collect?v=2&amp;tid=G-XYZ123</span>
+          <div class="flex-1"></div>
+          <span class="text-xs text-slate-600">en=session_start</span>
+        </div>
+      </div>
+
+      <!-- Event 7 — GA4, oldest visible -->
+      <div class="px-4 py-3 hover:bg-slate-800/20 cursor-pointer opacity-70">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 font-mono tabular-nums">14:32:01.312</span>
+          <span class="badge bg-violet-900/60 text-violet-300">GA4</span>
+          <span class="badge bg-slate-800 text-slate-400">POST</span>
+          <span class="text-xs text-slate-400 font-mono truncate">https://www.google-analytics.com/g/collect?v=2&amp;tid=G-XYZ123</span>
+          <div class="flex-1"></div>
+          <span class="text-xs text-slate-600">en=first_visit</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Status bar -->
+    <div class="px-4 py-2 border-t border-slate-800 bg-slate-950/60 flex items-center gap-4 flex-shrink-0">
+      <div class="flex items-center gap-1.5">
+        <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span class="text-xs text-slate-500">Capturing</span>
+      </div>
+      <span class="text-xs text-slate-700">·</span>
+      <span class="text-xs text-slate-600 font-mono">Ctrl+L clear &nbsp; Ctrl+F filter &nbsp; Ctrl+E export</span>
+    </div>
+
+  </div>
+
+</body>
+</html>
