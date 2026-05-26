@@ -69,10 +69,10 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason !== "install" && reason !== "update") return;
   try {
     const existing = await storage.getAnalysers();
-    const merged = mergeSeeds(existing, seeds as AnalyserConfig[]);
+    const merged = mergeSeeds(existing, seeds);
     await storage.setAnalysers(merged);
     configCache = null; // force re-read on next dispatch
   } catch (e) {
-    console.error("[seeds] migration failed", e);
+    console.error("[seeds] migration failed; bundled seeds may not be up to date", e);
   }
 });

@@ -62,4 +62,16 @@ describe("mergeSeeds", () => {
     const merged = mergeSeeds(existing, seeds);
     expect(merged.map(a => a.id)).toEqual(["user", "celebrus", "ga4"]);
   });
+
+  it("adds both duplicate ids from bundled seeds (defensive: not expected in practice)", () => {
+    // Defensive documentation: if bundled seeds contain duplicates, both are added
+    // since seenIds tracks only existing, not seeds. The Map ensures the second
+    // overwrites the first when merging with existing, but new seeds bypass that.
+    const existing: AnalyserConfig[] = [];
+    const seeds = [seed({ id: "dup", name: "First" }), seed({ id: "dup", name: "Second" })];
+    const merged = mergeSeeds(existing, seeds);
+    expect(merged).toHaveLength(2);
+    expect(merged[0].name).toBe("First");
+    expect(merged[1].name).toBe("Second");
+  });
 });
