@@ -12,5 +12,3 @@ export const MSG = {
 export const PORT_NAME = "dataviewer-events";
 
 export const SHARE_PREFIX = "dvw:1:";
-
-export { STORAGE_KEY_SETTINGS } from "./settings";
