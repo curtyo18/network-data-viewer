@@ -2,6 +2,20 @@ import { useState, useEffect } from "react";
 import type { AnalyserConfig, DslStep } from "@/shared/types";
 import { AnalyserConfigSchema } from "@/shared/schema";
 import { useAnalysers } from "@/side-panel/lib/use-analysers";
+import { runDslWithSteps, type PreviewRow } from "@/shared/dsl/preview";
+
+function formatPreviewValue(v: unknown): string {
+  const MAX = 500;
+  if (typeof v === "string") {
+    return v.length > MAX ? v.slice(0, MAX) + "…" : v;
+  }
+  try {
+    const s = JSON.stringify(v, null, 2);
+    return s.length > MAX ? s.slice(0, MAX) + "…" : s;
+  } catch {
+    return "[unserializable: " + String(v) + "]";
+  }
+}
 
 const EMPTY: AnalyserConfig = {
   id: "", name: "", enabled: true, urlPattern: "", source: "reqBody",
@@ -12,10 +26,16 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
   const { upsert } = useAnalysers();
   const [cfg, setCfg] = useState<AnalyserConfig>(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
   const [error, setError] = useState<string | null>(null);
+  const [sample, setSample] = useState<string>("");
+  const [preview, setPreview] = useState<{ rows: PreviewRow[]; error: string | null } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+
   useEffect(() => {
     setCfg(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
     setError(null);
   }, [initial]);
+
+  useEffect(() => { setPreview(null); }, [cfg.dsl]);
 
   function update<K extends keyof AnalyserConfig>(k: K, v: AnalyserConfig[K]) {
     setError(null);
@@ -33,6 +53,18 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
   function removeStep(i: number) { update("dsl", cfg.dsl.filter((_, idx) => idx !== i)); }
   function updateStep(i: number, patch: Partial<DslStep>) {
     update("dsl", cfg.dsl.map((s, idx) => idx === i ? { ...s, ...patch } as DslStep : s));
+  }
+
+  async function runPreview() {
+    setPreviewing(true);
+    try {
+      const rows = await runDslWithSteps(cfg.dsl, sample);
+      setPreview({ rows, error: null });
+    } catch (e) {
+      setPreview({ rows: [], error: (e as Error).message });
+    } finally {
+      setPreviewing(false);
+    }
   }
 
   async function save() {
@@ -93,6 +125,41 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
           <option value="">+ add step…</option>
           {["decode-uri","decode-base64","decode-form","gunzip","json-parse","query-parse","jsonpath","pluck","regex-extract","to-string"].map(op => <option key={op} value={op}>{op}</option>)}
         </select>
+      </div>
+      <div>
+        <label className="block text-slate-400">dsl preview</label>
+        <textarea
+          className="w-full h-20 bg-slate-900 border border-slate-700 px-2 py-1 rounded font-mono"
+          placeholder="paste a sample request body, url, or response — runs through the dsl chain above"
+          value={sample}
+          onChange={e => setSample(e.target.value)}
+          aria-label="DSL preview sample"
+        />
+        <div className="flex items-center gap-2 mt-1">
+          <button
+            className="px-2 py-1 bg-slate-800 rounded text-slate-200"
+            onClick={runPreview}
+            disabled={previewing || sample.length === 0}
+          >
+            {previewing ? "Running…" : "Run preview"}
+          </button>
+          <span className="text-slate-500 text-xs">preview shows DSL output only — sandbox runs on real captures</span>
+        </div>
+        {preview && (
+          <div className="mt-1 border border-slate-800 rounded">
+            {preview.rows.map((row, i) => (
+              <div key={i} className="border-b border-slate-800 last:border-b-0 p-1 text-xs">
+                <div className="text-slate-400">
+                  {row.step === "input" ? "input" : <span className="text-violet-300">{row.step.op}</span>}
+                  {row.error && <span className="text-rose-400 ml-2">err: {row.error}</span>}
+                </div>
+                <pre className="text-emerald-300 mt-0.5 whitespace-pre-wrap break-all max-h-32 overflow-y-auto">
+                  {formatPreviewValue(row.value)}
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-slate-400">sandbox code (optional)</label>
