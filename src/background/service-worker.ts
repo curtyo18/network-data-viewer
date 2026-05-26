@@ -3,6 +3,7 @@ import { dispatch } from "./dispatcher";
 import { OffscreenManager } from "./offscreen-manager";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
+import { STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
 import type { AnalyserConfig, CapturedEvent, MatchResult } from "@/shared/types";
 import seeds from "virtual:analyser-seeds";
 
@@ -10,6 +11,7 @@ const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
 const panelPorts = new Set<chrome.runtime.Port>();
 let configCache: AnalyserConfig[] | null = null;
+let settingsCache: Settings | null = null;
 
 chrome.runtime.onConnect.addListener(port => {
   if (port.name !== PORT_NAME) return;
@@ -18,7 +20,8 @@ chrome.runtime.onConnect.addListener(port => {
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && STORAGE_KEY in changes) {
+  if (area !== "local") return;
+  if (STORAGE_KEY in changes) {
     const oldConfigs = (changes[STORAGE_KEY].oldValue as AnalyserConfig[] | undefined) ?? [];
     const newConfigs = (changes[STORAGE_KEY].newValue as AnalyserConfig[] | undefined) ?? [];
     configCache = newConfigs;
@@ -30,6 +33,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
     for (const removedId of oldById.keys()) offscreen.invalidate(removedId);
   }
+  if (STORAGE_KEY_SETTINGS in changes) settingsCache = null;
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -47,7 +51,8 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
     : event;
 
   if (configCache === null) configCache = await storage.getAnalysers();
-  const results: MatchResult[] = await dispatch(enriched, configCache, offscreen.run);
+  if (settingsCache === null) settingsCache = await storage.getSettings();
+  const results: MatchResult[] = await dispatch(enriched, configCache, settingsCache, offscreen.run);
 
   if (results.length === 0 || panelPorts.size === 0) return;
   for (const r of results) {

@@ -79,7 +79,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return false;
   }
   if (msg?.type === MSG.OFFSCREEN_RUN_TRANSFORM) {
-    const { analyserId, requestId, input } = msg;
+    const { analyserId, requestId, input, settings } = msg;
     const iframe = iframes.get(analyserId);
     if (!iframe?.contentWindow) {
       chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RESULT, requestId, payload: { error: "iframe missing" } });
@@ -104,7 +104,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_RESULT, requestId, payload: { error: "offscreen run timeout" } });
     }, RUN_TIMEOUT_MS);
     window.addEventListener("message", handler);
-    iframe.contentWindow.postMessage({ type: "run", requestId, input }, "*");
+    iframe.contentWindow.postMessage({ type: "run", requestId, input, settings }, "*");
     return false;
   }
   return false;
