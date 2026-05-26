@@ -1,20 +1,14 @@
-import { useState } from "react";
-import { encodeConfig } from "@/shared/share";
-import { useAnalysers } from "@/side-panel/lib/use-analysers";
+import { useExport } from "@/side-panel/lib/use-export";
 
 export function ExportButton() {
-  const { analysers } = useAnalysers();
-  const [copied, setCopied] = useState(false);
-
-  async function doExport() {
-    const s = encodeConfig(analysers);
-    await navigator.clipboard.writeText(s);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
+  const { copy, copied } = useExport();
 
   return (
-    <button className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200" onClick={doExport}>
+    <button
+      className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200"
+      onClick={copy}
+      title="Export all (Ctrl+E)"
+    >
       {copied ? "Copied!" : "Export all"}
     </button>
   );

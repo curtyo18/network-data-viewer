@@ -2,6 +2,7 @@ import "./styles.css";
 import { createRoot } from "react-dom/client";
 import { useEffect, useMemo, useState } from "react";
 import { useEventStream } from "./lib/port";
+import { useExport } from "./lib/use-export";
 import { EventList } from "./components/EventList";
 import { AnalyserManager } from "./components/AnalyserManager";
 import { ConfigEditor } from "./components/ConfigEditor";
@@ -21,6 +22,7 @@ function App() {
   const [mode, setMode] = useState<Mode>({ kind: "events" });
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [filter, setFilter] = useState("");
+  const { copy: exportCopy } = useExport();
 
   const filteredEvents = useMemo(() => {
     if (!filter.trim()) return events;
@@ -51,6 +53,34 @@ function App() {
       chrome.storage.onChanged.removeListener(onChange);
     };
   }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const meta = e.ctrlKey || e.metaKey;
+      if (e.key === "Escape" && (mode.kind === "edit" || mode.kind === "import")) {
+        e.preventDefault();
+        setMode({ kind: "manage" });
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "l" && mode.kind === "events") {
+        e.preventDefault();
+        clearEvents();
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "f" && mode.kind === "events") {
+        const el = document.querySelector<HTMLInputElement>("input[aria-label='Filter events']");
+        if (el) { e.preventDefault(); el.focus(); }
+        return;
+      }
+      if (meta && e.key.toLowerCase() === "e" && mode.kind === "events") {
+        e.preventDefault();
+        void exportCopy();
+        return;
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, clearEvents, exportCopy]);
 
   async function toggleShowRaw() {
     const previous = settings;
