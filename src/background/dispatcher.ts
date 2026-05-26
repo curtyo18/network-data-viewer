@@ -9,6 +9,21 @@ export type SandboxRunner = (
   settings: Settings,
 ) => Promise<{ result: unknown } | { error: string }>;
 
+/** A compiled entry in the config cache — `re` is null when urlPattern is invalid. */
+export interface CompiledConfig {
+  cfg: AnalyserConfig;
+  re: RegExp | null;
+}
+
+/** Compile a list of raw AnalyserConfigs into the cache shape used by dispatch. */
+export function compileConfigs(configs: AnalyserConfig[]): CompiledConfig[] {
+  return configs.map(cfg => {
+    let re: RegExp | null = null;
+    try { re = new RegExp(cfg.urlPattern); } catch { /* invalid pattern — re stays null */ }
+    return { cfg, re };
+  });
+}
+
 function selectInput(ev: CapturedEvent, source: AnalyserConfig["source"]): unknown {
   switch (source) {
     case "reqBody": return ev.reqBody;
@@ -19,16 +34,14 @@ function selectInput(ev: CapturedEvent, source: AnalyserConfig["source"]): unkno
 
 export async function dispatch(
   event: CapturedEvent,
-  configs: AnalyserConfig[],
+  configs: CompiledConfig[],
   settings: Settings,
   runSandbox: SandboxRunner,
 ): Promise<MatchResult[]> {
   const out: MatchResult[] = [];
-  for (const cfg of configs) {
+  for (const { cfg, re } of configs) {
     if (!cfg.enabled) continue;
-    let re: RegExp;
-    try { re = new RegExp(cfg.urlPattern); } catch { continue; }
-    if (!re.test(event.url)) continue;
+    if (re === null || !re.test(event.url)) continue;
 
     const t0 = performance.now();
     const input = selectInput(event, cfg.source);

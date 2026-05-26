@@ -1,5 +1,5 @@
 import { Storage } from "./storage";
-import { dispatch } from "./dispatcher";
+import { dispatch, compileConfigs, type CompiledConfig } from "./dispatcher";
 import { OffscreenManager } from "./offscreen-manager";
 import { mergeSeeds } from "./merge-seeds";
 import { CapturedEventSchema } from "@/shared/schema";
@@ -11,7 +11,7 @@ import seeds from "virtual:analyser-seeds";
 const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
 const panelPorts = new Set<chrome.runtime.Port>();
-let configCache: AnalyserConfig[] | null = null;
+let configCache: CompiledConfig[] | null = null;
 let settingsCache: Settings | null = null;
 
 chrome.runtime.onConnect.addListener(port => {
@@ -25,7 +25,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (STORAGE_KEY in changes) {
     const oldConfigs = (changes[STORAGE_KEY].oldValue as AnalyserConfig[] | undefined) ?? [];
     const newConfigs = (changes[STORAGE_KEY].newValue as AnalyserConfig[] | undefined) ?? [];
-    configCache = newConfigs;
+    configCache = compileConfigs(newConfigs);
     const oldById = new Map(oldConfigs.map(c => [c.id, c]));
     for (const cfg of newConfigs) {
       const prev = oldById.get(cfg.id);
@@ -51,7 +51,7 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
     ? { ...event, originTab: { tabId: sender.tab.id, url: sender.tab.url ?? "" } }
     : event;
 
-  if (configCache === null) configCache = await storage.getAnalysers();
+  if (configCache === null) configCache = compileConfigs(await storage.getAnalysers());
   if (settingsCache === null) settingsCache = await storage.getSettings();
   const results: MatchResult[] = await dispatch(enriched, configCache, settingsCache, offscreen.run);
 
