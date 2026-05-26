@@ -9,6 +9,7 @@ export function useAnalysers(): {
   analysers: AnalyserConfig[];
   setAnalysers: (next: AnalyserConfig[]) => Promise<void>;
   upsert: (cfg: AnalyserConfig) => Promise<void>;
+  toggle: (id: string) => Promise<void>;
   remove: (id: string) => Promise<void>;
 } {
   const [analysers, setLocal] = useState<AnalyserConfig[]>([]);
@@ -31,10 +32,14 @@ export function useAnalysers(): {
     const next = idx >= 0 ? current.map((a, i) => i === idx ? cfg : a) : [...current, cfg];
     await storage.setAnalysers(next);
   }, []);
+  const toggle = useCallback(async (id: string) => {
+    const current = await storage.getAnalysers();
+    await storage.setAnalysers(current.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
+  }, []);
   const remove = useCallback(async (id: string) => {
     const current = await storage.getAnalysers();
     await storage.setAnalysers(current.filter(a => a.id !== id));
   }, []);
 
-  return { analysers, setAnalysers, upsert, remove };
+  return { analysers, setAnalysers, upsert, toggle, remove };
 }

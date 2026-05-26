@@ -2,11 +2,7 @@ import type { AnalyserConfig } from "@/shared/types";
 import { useAnalysers } from "@/side-panel/lib/use-analysers";
 
 export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | null) => void }) {
-  const { analysers, setAnalysers, remove } = useAnalysers();
-
-  async function toggle(id: string) {
-    await setAnalysers(analysers.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
-  }
+  const { analysers, toggle, remove } = useAnalysers();
 
   return (
     <div className="p-2 text-xs">
