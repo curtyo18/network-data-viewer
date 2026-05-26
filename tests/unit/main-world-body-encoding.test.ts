@@ -77,4 +77,46 @@ describe("encodeBody", () => {
     expect(r.body).toBe("[non-string body]");
     expect(r.encoding).toBe("text");
   });
+
+  it("truncates an ArrayBuffer larger than maxBytes", async () => {
+    const ab = new ArrayBuffer(64);
+    const r = await encodeBody(ab, 16);
+    expect(r.body).toBe("[body truncated]");
+    expect(r.encoding).toBe("text");
+  });
+
+  it("truncates a Blob larger than maxBytes", async () => {
+    const bytes = new Uint8Array(64).fill(7);
+    const blob = new Blob([bytes]);
+    const r = await encodeBody(blob, 16);
+    expect(r.body).toBe("[body truncated]");
+    expect(r.encoding).toBe("text");
+  });
+
+  it("truncates a Uint8Array larger than maxBytes", async () => {
+    const bytes = new Uint8Array(64).fill(3);
+    const r = await encodeBody(bytes, 16);
+    expect(r.body).toBe("[body truncated]");
+    expect(r.encoding).toBe("text");
+  });
+
+  it.skipIf(typeof ReadableStream === "undefined")(
+    "encodes a ReadableStream emitting known bytes as base64",
+    async () => {
+      // Build a stream that emits two chunks
+      const chunk1 = new Uint8Array([1, 2, 3]);
+      const chunk2 = new Uint8Array([4, 5, 6]);
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(chunk1);
+          controller.enqueue(chunk2);
+          controller.close();
+        },
+      });
+      const r = await encodeBody(stream);
+      expect(r.encoding).toBe("base64");
+      const decoded = base64ToBytes(r.body as string);
+      expect(decoded).toEqual(new Uint8Array([1, 2, 3, 4, 5, 6]));
+    },
+  );
 });

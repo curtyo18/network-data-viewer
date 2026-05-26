@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { MSG } from "@/shared/messages";
-
-export type AnalyserError = { ts: number; stage: "dsl" | "sandbox"; message: string };
+import type { AnalyserError } from "@/shared/types";
+export type { AnalyserError };
 
 export function useAnalyserErrors(): {
   errors: Record<string, AnalyserError[]>;

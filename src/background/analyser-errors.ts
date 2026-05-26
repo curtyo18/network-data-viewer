@@ -1,4 +1,5 @@
-export type AnalyserError = { ts: number; stage: "dsl" | "sandbox"; message: string };
+import type { AnalyserError } from "@/shared/types";
+export type { AnalyserError };
 export const ERROR_BUFFER_SIZE = 5;
 
 export class AnalyserErrorStore {

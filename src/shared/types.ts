@@ -44,6 +44,12 @@ export type AnalyserConfig = {
   createdAt: number;
 };
 
+export type AnalyserError = {
+  ts: number;
+  stage: "dsl" | "sandbox";
+  message: string;
+};
+
 export type MatchResult = {
   analyserId: string;
   analyserName: string;

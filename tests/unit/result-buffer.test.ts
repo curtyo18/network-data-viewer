@@ -30,15 +30,13 @@ describe("ResultBuffer", () => {
     buf = new ResultBuffer();
   });
 
-  it("starts empty — size() is 0 and snapshot() returns []", () => {
-    expect(buf.size()).toBe(0);
+  it("starts empty — snapshot() returns []", () => {
     expect(buf.snapshot()).toEqual([]);
   });
 
   it("push accumulates results", () => {
     buf.push(makeResult("a"));
     buf.push(makeResult("b"));
-    expect(buf.size()).toBe(2);
     const snap = buf.snapshot();
     expect(snap[0].analyserId).toBe("a");
     expect(snap[1].analyserId).toBe("b");
@@ -48,8 +46,8 @@ describe("ResultBuffer", () => {
     for (let i = 0; i < RESULT_BUFFER_SIZE + 2; i++) {
       buf.push(makeResult(`r${i}`));
     }
-    expect(buf.size()).toBe(RESULT_BUFFER_SIZE);
     const snap = buf.snapshot();
+    expect(snap).toHaveLength(RESULT_BUFFER_SIZE);
     // r0 and r1 should have been evicted
     expect(snap[0].analyserId).toBe("r2");
     expect(snap[RESULT_BUFFER_SIZE - 1].analyserId).toBe(`r${RESULT_BUFFER_SIZE + 1}`);
@@ -59,33 +57,6 @@ describe("ResultBuffer", () => {
     buf.push(makeResult("x"));
     const snap = buf.snapshot();
     snap.push(makeResult("injected"));
-    expect(buf.size()).toBe(1);
-  });
-
-  it("drain returns all results and clears the buffer", () => {
-    buf.push(makeResult("a"));
-    buf.push(makeResult("b"));
-    const drained = buf.drain();
-    expect(drained).toHaveLength(2);
-    expect(drained[0].analyserId).toBe("a");
-    expect(drained[1].analyserId).toBe("b");
-    expect(buf.size()).toBe(0);
-    expect(buf.snapshot()).toEqual([]);
-  });
-
-  it("drain on an empty buffer returns [] and does not throw", () => {
-    expect(buf.drain()).toEqual([]);
-    expect(buf.size()).toBe(0);
-  });
-
-  it("size reflects current count after mixed operations", () => {
-    buf.push(makeResult("a"));
-    buf.push(makeResult("b"));
-    buf.push(makeResult("c"));
-    expect(buf.size()).toBe(3);
-    buf.drain();
-    expect(buf.size()).toBe(0);
-    buf.push(makeResult("d"));
-    expect(buf.size()).toBe(1);
+    expect(buf.snapshot()).toHaveLength(1);
   });
 });

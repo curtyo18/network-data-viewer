@@ -10,17 +10,7 @@ export class ResultBuffer {
     if (this.buf.length > RESULT_BUFFER_SIZE) this.buf.shift();
   }
 
-  drain(): MatchResult[] {
-    const out = this.buf;
-    this.buf = [];
-    return out;
-  }
-
   snapshot(): MatchResult[] {
     return [...this.buf];
-  }
-
-  size(): number {
-    return this.buf.length;
   }
 }

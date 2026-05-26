@@ -1,6 +1,6 @@
 import "./styles.css";
 import { createRoot } from "react-dom/client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEventStream } from "./lib/port";
 import { useExport } from "./lib/use-export";
 import { EventList } from "./components/EventList";
@@ -22,6 +22,7 @@ function App() {
   const [mode, setMode] = useState<Mode>({ kind: "events" });
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [filter, setFilter] = useState("");
+  const filterInputRef = useRef<HTMLInputElement>(null);
   const { copy: exportCopy } = useExport();
 
   const filteredEvents = useMemo(() => {
@@ -68,8 +69,7 @@ function App() {
         return;
       }
       if (meta && e.key.toLowerCase() === "f" && mode.kind === "events") {
-        const el = document.querySelector<HTMLInputElement>("input[aria-label='Filter events']");
-        if (el) { e.preventDefault(); el.focus(); }
+        if (filterInputRef.current) { e.preventDefault(); filterInputRef.current.focus(); }
         return;
       }
       if (meta && e.key.toLowerCase() === "e" && mode.kind === "events") {
@@ -123,6 +123,7 @@ function App() {
       {mode.kind === "events" && events.length > 0 && (
         <div className="px-2 pt-2 pb-1 border-b border-slate-800">
           <input
+            ref={filterInputRef}
             type="text"
             placeholder="filter url / method / analyser…"
             className="w-full bg-slate-900 border border-slate-700 px-2 py-1 rounded text-xs font-mono"

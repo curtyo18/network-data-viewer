@@ -36,7 +36,7 @@ export async function runDslWithSteps(
         case "pluck": cur = pluck(cur, step.keys); break;
         case "regex-extract": cur = regexExtract(cur, step.pattern, step.group ?? 0); break;
         case "to-string": cur = toString(cur); break;
-        default: { const exhaustive: never = step; void exhaustive; throw new Error(`unknown op`); }
+        default: { const exhaustive: never = step; void exhaustive; throw new Error(`unknown DSL op: ${(step as { op: string }).op}`); }
       }
       rows.push({ step, value: cur });
     } catch (e) {

@@ -21,17 +21,17 @@ export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | nul
               <label className="flex items-center gap-2 cursor-pointer flex-1">
                 <input type="checkbox" checked={a.enabled} onChange={() => toggle(a.id)} />
                 <span className={a.enabled ? "text-slate-100" : "text-slate-500"}>{a.name}</span>
+              </label>
+              <div className="flex gap-2">
                 {errors[a.id]?.length ? (
                   <button
                     className="text-rose-400 text-xs"
                     aria-label={`${errors[a.id].length} errors`}
-                    onClick={(e) => { e.preventDefault(); setExpanded(expanded === a.id ? null : a.id); }}
+                    onClick={() => setExpanded(expanded === a.id ? null : a.id)}
                   >
                     ● {errors[a.id].length}
                   </button>
                 ) : null}
-              </label>
-              <div className="flex gap-2">
                 <button className="text-slate-400 hover:text-slate-100" onClick={() => onEdit(a)}>edit</button>
                 <button className="text-rose-400 hover:text-rose-300" onClick={() => remove(a.id)}>×</button>
               </div>
