@@ -18,6 +18,8 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      # Node 20 ships npm 10.x; the .npmrc relies on min-release-age (npm 11.10+).
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
@@ -32,6 +34,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run build

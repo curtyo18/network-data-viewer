@@ -70,7 +70,7 @@ See `docs/permissions-justification.md` for the per-permission Web Store narrati
 
 ## Development
 
-Requires Node 20+.
+Requires Node 20+ and **npm 11.10 or newer** — the repo's `.npmrc` uses [`min-release-age`](https://docs.npmjs.com/cli/v11/using-npm/config#min-release-age) (and other supply-chain hardening defaults) which silently no-ops on older npm. If you're on the npm that ships with Node 20 (10.x), upgrade with `npm install -g npm@latest`.
 
 ```bash
 npm install
@@ -83,6 +83,10 @@ npm run package     # build + zip dist/ → network-data-viewer-vX.Y.Z.zip
 ```
 
 Load the built `dist/` via `chrome://extensions` → "Load unpacked" while iterating.
+
+### Supply-chain hardening
+
+The committed `.npmrc` blocks lifecycle scripts (`ignore-scripts=true`), refuses package versions published within the last 3 days (`min-release-age=3`), pins the registry, and forces exact versions in `package.json`. If a fresh `npm install` needs to rebuild a native dependency (e.g. for sharp / better-sqlite3 / esbuild on an unsupported platform), run `npm rebuild <package>` explicitly — the lifecycle-script block is the primary execution vector for compromised packages, so the rebuild is opt-in.
 
 ### Architecture
 
