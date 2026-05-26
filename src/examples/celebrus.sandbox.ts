@@ -5,6 +5,7 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
   const EVENT_PREFIX = /(?=&ap=)/;
   const PRIORITY_KEYS = ["ap", "wk", "ai", "at"] as const;
 
+  // Telemetry event types that don't represent user actions; filtered out unless showRaw.
   const IGNORED_EVENT_TYPES = new Set([
     "beforeunload",
     "network",
@@ -17,6 +18,7 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
     "error",
   ]);
 
+  // Internal/instrumentation keys (timestamps, viewport metrics, internal coords) stripped in filtered mode.
   const NOISE_KEYS = new Set([
     "aD", "ct", "tz", "xi", "a", "nu",
     "aX", "aY", "al", "am",
@@ -34,6 +36,7 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
     if (idx < 0) return null;
     return raw
       .slice(idx + BODY_DELIMITER.length)
+      // Reverse the encoder's per-window character rotations: 5+8 then 2+2.
       .replace(/(.....)(........)/g, "$2$1")
       .replace(/(..)(..)/g, "$2$1")
       .replace(/q/g, "%")
@@ -89,7 +92,7 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
   if (body === null) return null;
 
   const showRaw = readShowRaw(settings);
-  const events: unknown[] = [];
+  const events: Array<EventRecord | unknown> = [];
 
   for (const segment of splitSegments(body)) {
     const event = parseSegment(segment);
