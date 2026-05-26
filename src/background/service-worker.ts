@@ -3,6 +3,7 @@ import { dispatch, compileConfigs, type CompiledConfig } from "./dispatcher";
 import { OffscreenManager } from "./offscreen-manager";
 import { mergeSeeds } from "./merge-seeds";
 import { AnalyserErrorStore } from "./analyser-errors";
+import { ResultBuffer } from "./result-buffer";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
 import { STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
@@ -13,6 +14,7 @@ const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
 const panelPorts = new Set<chrome.runtime.Port>();
 const errorStore = new AnalyserErrorStore();
+const resultBuffer = new ResultBuffer();
 let configCache: CompiledConfig[] | null = null;
 let settingsCache: Settings | null = null;
 
@@ -20,6 +22,10 @@ chrome.runtime.onConnect.addListener(port => {
   if (port.name !== PORT_NAME) return;
   panelPorts.add(port);
   port.onDisconnect.addListener(() => panelPorts.delete(port));
+  // Replay buffered results so a panel opened after the fact sees recent activity.
+  for (const r of resultBuffer.snapshot()) {
+    try { port.postMessage({ type: MSG.MATCH_RESULT, payload: r }); } catch { /* ignore */ }
+  }
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -69,6 +75,7 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
 
   for (const r of results) {
     if (r.error) errorStore.record(r.analyserId, r.error);
+    resultBuffer.push(r);
   }
 
   if (results.length === 0 || panelPorts.size === 0) return;
