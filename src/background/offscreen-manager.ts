@@ -57,7 +57,11 @@ export class OffscreenManager {
   }
 
   run: SandboxRunner = async (analyserId, code, input, settings) => {
-    await this.ensureAnalyser(analyserId, code);
+    try {
+      await this.ensureAnalyser(analyserId, code);
+    } catch (e) {
+      return { error: `sandbox setup failed: ${(e as Error).message}` };
+    }
     const requestId = crypto.randomUUID();
     return new Promise(resolve => {
       const timer = setTimeout(() => {
