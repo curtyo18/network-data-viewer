@@ -92,6 +92,7 @@ chrome.sidePanel?.setPanelBehavior({ openPanelOnActionClick: true }).catch(() =>
 chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   if (reason !== "install" && reason !== "update") return;
   try {
+    await storage.migrate();
     const existing = await storage.getAnalysers();
     const merged = mergeSeeds(existing, seeds);
     await storage.setAnalysers(merged);
