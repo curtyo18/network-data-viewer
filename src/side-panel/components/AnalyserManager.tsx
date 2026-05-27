@@ -36,7 +36,7 @@ export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | nul
                 ) : null}
                 <button
                   className="text-slate-400 hover:text-slate-100"
-                  onClick={() => copyOne(a)}
+                  onClick={() => { void copyOne(a); }}
                   title="Copy share string for this analyser"
                   aria-label={`Copy share string for ${a.name}`}
                 >

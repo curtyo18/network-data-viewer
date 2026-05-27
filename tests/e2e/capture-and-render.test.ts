@@ -316,23 +316,19 @@ test("pause suppresses new captures; resume restores them", async () => {
     await sw.evaluate(async () => {
       await chrome.storage.local.set({ settings: { showRaw: false, paused: true } });
     });
-    // Allow the SW's onChanged listener to invalidate settingsCache
-    await panel.waitForTimeout(300);
 
     // Fire a fetch — should be dropped by the SW early-return
     const responseReady1 = page.waitForResponse(/google-analytics\.com\/g\/collect/);
     await page.click("#fire-fetch");
     await responseReady1;
-    await page.waitForTimeout(POST_DISPATCH_SLACK_MS);
 
-    // No PauseTest row should appear
+    // No PauseTest row should appear; polling assertion replaces the sleep
     await expect(panel.locator("text=PauseTest")).toHaveCount(0, { timeout: 3000 });
 
     // Unpause
     await sw.evaluate(async () => {
       await chrome.storage.local.set({ settings: { showRaw: false, paused: false } });
     });
-    await panel.waitForTimeout(300);
 
     // Fire another fetch — should now be captured
     const responseReady2 = page.waitForResponse(/google-analytics\.com\/g\/collect/);

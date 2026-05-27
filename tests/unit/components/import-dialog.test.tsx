@@ -139,7 +139,7 @@ describe("ImportDialog", () => {
     unmount();
   });
 
-  it("malformed string → error state with message, storage unchanged", async () => {
+  it("malformed string → error visible alongside textarea and Decode button, storage unchanged", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     chromeMock.setStored("analyserConfigs", []);
@@ -155,6 +155,9 @@ describe("ImportDialog", () => {
       const el = document.querySelector(".text-rose-400");
       expect(el).not.toBeNull();
     });
+    // Textarea and Decode button must still be present (no separate error-state view)
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
+    expect(screen.getByText("Decode")).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
 
     const stored = chromeMock.getStored("analyserConfigs") as AnalyserConfig[];

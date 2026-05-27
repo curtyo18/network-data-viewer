@@ -6,14 +6,13 @@ import type { DecodedPreview } from "@/side-panel/lib/import-preview";
 import type { AnalyserConfig } from "@/shared/types";
 
 type State =
-  | { kind: "input" }
-  | { kind: "preview"; incoming: AnalyserConfig[]; preview: DecodedPreview }
-  | { kind: "error"; message: string };
+  | { kind: "input"; decodeError: string | null }
+  | { kind: "preview"; incoming: AnalyserConfig[]; preview: DecodedPreview };
 
 export function ImportDialog({ onClose }: { onClose: () => void }) {
   const { analysers, setAnalysers } = useAnalysers();
   const [text, setText] = useState("");
-  const [state, setState] = useState<State>({ kind: "input" });
+  const [state, setState] = useState<State>({ kind: "input", decodeError: null });
 
   function doDecode() {
     try {
@@ -21,7 +20,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
       const preview = buildPreview(analysers, incoming);
       setState({ kind: "preview", incoming, preview });
     } catch (e) {
-      setState({ kind: "error", message: (e as Error).message });
+      setState({ kind: "input", decodeError: (e as Error).message });
     }
   }
 
@@ -40,8 +39,11 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
           <textarea
             className="w-full h-24 bg-slate-900 border border-slate-700 px-2 py-1 rounded"
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={e => { setText(e.target.value); setState({ kind: "input", decodeError: null }); }}
           />
+          {state.decodeError && (
+            <div className="text-rose-400">{state.decodeError}</div>
+          )}
           <div className="flex gap-2">
             <button className="px-3 py-1 bg-violet-700 rounded text-white" onClick={doDecode}>Decode</button>
             <button className="px-3 py-1 bg-slate-800 rounded text-slate-200" onClick={onClose}>Cancel</button>
@@ -89,23 +91,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
             >
               Install
             </button>
-            <button className="px-3 py-1 bg-slate-800 rounded text-slate-200" onClick={() => setState({ kind: "input" })}>Back</button>
-          </div>
-        </>
-      )}
-
-      {state.kind === "error" && (
-        <>
-          <label className="block text-slate-400">paste dvw:1:… string</label>
-          <textarea
-            className="w-full h-24 bg-slate-900 border border-slate-700 px-2 py-1 rounded"
-            value={text}
-            onChange={e => { setText(e.target.value); setState({ kind: "input" }); }}
-          />
-          <div className="text-rose-400">{state.message}</div>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 bg-violet-700 rounded text-white" onClick={doDecode}>Decode</button>
-            <button className="px-3 py-1 bg-slate-800 rounded text-slate-200" onClick={onClose}>Cancel</button>
+            <button className="px-3 py-1 bg-slate-800 rounded text-slate-200" onClick={() => setState({ kind: "input", decodeError: null })}>Back</button>
           </div>
         </>
       )}

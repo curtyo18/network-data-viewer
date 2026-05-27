@@ -65,4 +65,16 @@ describe("buildPreview", () => {
     expect(result.replace).toHaveLength(0);
     expect(result.unchanged).toHaveLength(0);
   });
+
+  it("same field values but different key insertion order → unchanged, not replace", () => {
+    // Construct two objects with the same data but deliberately different key order
+    const base = makeAnalyser({ id: "a", name: "A", seedVersion: 1 });
+    // Build a copy with keys inserted in a different order
+    const { id, name, enabled, urlPattern, source, dsl, createdAt, seedVersion } = base;
+    const reordered = { name, id, source, urlPattern, enabled, createdAt, dsl, seedVersion } as AnalyserConfig;
+    const result = buildPreview([base], [reordered]);
+    expect(result.unchanged).toHaveLength(1);
+    expect(result.replace).toHaveLength(0);
+    expect(result.add).toHaveLength(0);
+  });
 });

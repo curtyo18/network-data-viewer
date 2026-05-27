@@ -1,6 +1,6 @@
 import "./styles.css";
 import { createRoot } from "react-dom/client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useEventStream } from "./lib/port";
 import { useExport } from "./lib/use-export";
 import { useAnalysers } from "./lib/use-analysers";
@@ -62,6 +62,30 @@ function App() {
     };
   }, []);
 
+  const togglePaused = useCallback(async () => {
+    const previous = settings;
+    const next: Settings = { ...previous, paused: !previous.paused };
+    setSettings(next);
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
+    } catch (e) {
+      console.error("[settings] failed to persist paused toggle", e);
+      setSettings(previous);
+    }
+  }, [settings]);
+
+  const toggleShowRaw = useCallback(async () => {
+    const previous = settings;
+    const next: Settings = { ...previous, showRaw: !previous.showRaw };
+    setSettings(next);
+    try {
+      await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
+    } catch (e) {
+      console.error("[settings] failed to persist showRaw toggle", e);
+      setSettings(previous);
+    }
+  }, [settings]);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const meta = e.ctrlKey || e.metaKey;
@@ -85,8 +109,9 @@ function App() {
         return;
       }
       if (meta && e.key.toLowerCase() === "p" && mode.kind === "events") {
-        // Chrome's default Ctrl+P opens the print dialog; preventDefault should win in the side-panel surface.
-        // If it doesn't, we'll bikeshed the binding later.
+        // Chrome reserves Ctrl+P for the print dialog in most surfaces, but in a side-panel
+        // extension page the extension's keydown listener fires first and preventDefault()
+        // suppresses the browser default — so this binding works here without conflict.
         e.preventDefault();
         void togglePaused();
         return;
@@ -94,31 +119,7 @@ function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, clearEvents, exportCopy, settings.paused]);
-
-  async function togglePaused() {
-    const previous = settings;
-    const next: Settings = { ...previous, paused: !previous.paused };
-    setSettings(next);
-    try {
-      await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
-    } catch (e) {
-      console.error("[settings] failed to persist paused toggle", e);
-      setSettings(previous);
-    }
-  }
-
-  async function toggleShowRaw() {
-    const previous = settings;
-    const next: Settings = { ...previous, showRaw: !previous.showRaw };
-    setSettings(next);
-    try {
-      await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
-    } catch (e) {
-      console.error("[settings] failed to persist showRaw toggle", e);
-      setSettings(previous);
-    }
-  }
+  }, [mode, clearEvents, exportCopy, togglePaused, toggleShowRaw]);
 
   return (
     <div className="h-screen flex flex-col">
