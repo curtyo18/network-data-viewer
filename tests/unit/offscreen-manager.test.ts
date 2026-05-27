@@ -180,7 +180,7 @@ describe("OffscreenManager", () => {
       const stub = makeChromeStub();
       stub.createDocument.mockRejectedValueOnce(new Error("Page failed to load"));
       const om = new OffscreenManager();
-      const result = await om.run("a", "code", null, { showRaw: false });
+      const result = await om.run("a", "code", null, { showRaw: false, paused: false });
       expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*Page failed to load/) });
     });
   });
