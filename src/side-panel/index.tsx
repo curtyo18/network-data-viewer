@@ -135,7 +135,7 @@ function App() {
         </div>
       )}
       <main className="flex-1 overflow-hidden">
-        {mode.kind === "events" && <EventList events={filteredEvents} />}
+        {mode.kind === "events" && <EventList events={filteredEvents} filter={filter} />}
         {mode.kind === "manage" && <AnalyserManager onEdit={cfg => setMode({ kind: "edit", cfg })} />}
         {mode.kind === "edit" && <ConfigEditor initial={mode.cfg} onClose={() => setMode({ kind: "manage" })} />}
         {mode.kind === "import" && <ImportDialog onClose={() => setMode({ kind: "manage" })} />}
