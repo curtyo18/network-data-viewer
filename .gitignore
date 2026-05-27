@@ -1,6 +1,7 @@
 # design docs are tracked in the life repo, not here
 specs/
 plans/
+research/
 
 # build + dependency artefacts
 node_modules/

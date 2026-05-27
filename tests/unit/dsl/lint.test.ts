@@ -7,7 +7,6 @@ const BASE: AnalyserConfig = {
   name: "Lint Test",
   enabled: true,
   urlPattern: "example\\.com",
-  source: "reqBody",
   dsl: [],
   createdAt: 1000,
 };

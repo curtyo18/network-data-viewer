@@ -7,7 +7,6 @@ const seed = (over: Partial<AnalyserConfig>): AnalyserConfig => ({
   name: "n",
   enabled: true,
   urlPattern: "x",
-  source: "url",
   dsl: [],
   createdAt: 0,
   ...over,

@@ -6,6 +6,8 @@ window.addEventListener("message", (ev: MessageEvent) => {
 
   if (msg.type === "init") {
     try {
+      // The sandbox function signature is (input: SandboxInput, settings: Settings) => unknown | { fanOut: unknown[] }.
+      // SandboxInput shape and the fanOut convention are defined in src/shared/types.ts.
       cachedFn = new Function("input", "settings", msg.code) as (input: unknown, settings: unknown) => unknown;
       (ev.source as Window).postMessage({ type: "ready", analyserId: msg.analyserId }, "*");
     } catch (e) {

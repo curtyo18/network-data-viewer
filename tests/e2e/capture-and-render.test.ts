@@ -20,7 +20,6 @@ test("captures fetch to GA4 and renders in side panel", async () => {
       name: "GA4",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [{ op: "query-parse" }],
       createdAt: 0
     }]
@@ -52,7 +51,6 @@ test("sandbox path: analyser with sandboxCode produces a row via the offscreen i
       name: "Sandboxed",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [],
       sandboxCode: 'return { fanOut: ["sandbox-marker-row"] };',
       createdAt: 0
@@ -83,7 +81,6 @@ test("captures XHR to a JSON endpoint and renders in side panel", async () => {
       name: "XhrAnalyser",
       enabled: true,
       urlPattern: "__test/analytics",
-      source: "reqBody",
       dsl: [{ op: "json-parse" }],
       createdAt: 0
     }]
@@ -114,7 +111,6 @@ test("captures sendBeacon to GA4 and renders in side panel", async () => {
       name: "BeaconAnalyser",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [{ op: "query-parse" }],
       createdAt: 0
     }]
@@ -144,7 +140,6 @@ test("settings showRaw toggle is reflected in sandbox analyser output", async ()
       name: "ShowRawAnalyser",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [],
       sandboxCode: 'return { fanOut: [settings && settings.showRaw ? "raw-output" : "filtered-output"] };',
       createdAt: 0
@@ -208,7 +203,6 @@ test("panel-not-open: results are buffered and replayed when the panel connects"
       name: "GA4",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [{ op: "query-parse" }],
       createdAt: 0
     }]);
@@ -251,7 +245,6 @@ test("filter bar narrows visible rows by analyser name", async () => {
         name: "FilterAlpha",
         enabled: true,
         urlPattern: "google-analytics\\.com/g/collect",
-        source: "url",
         dsl: [{ op: "query-parse" }],
         createdAt: 0
       },
@@ -260,7 +253,6 @@ test("filter bar narrows visible rows by analyser name", async () => {
         name: "FilterBeta",
         enabled: true,
         urlPattern: "google-analytics\\.com/g/collect",
-        source: "url",
         dsl: [{ op: "query-parse" }],
         createdAt: 0
       }
@@ -297,7 +289,6 @@ test("pause suppresses new captures; resume restores them", async () => {
       name: "PauseTest",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [{ op: "query-parse" }],
       createdAt: 0
     }]
@@ -348,7 +339,6 @@ test("clear button removes all rows from the events list", async () => {
       name: "ClearTest",
       enabled: true,
       urlPattern: "google-analytics\\.com/g/collect",
-      source: "url",
       dsl: [{ op: "query-parse" }],
       createdAt: 0
     }]

@@ -11,7 +11,6 @@ const BASE: AnalyserConfig = {
   name: "My Analyser",
   enabled: true,
   urlPattern: "example\\.com",
-  source: "reqBody",
   dsl: [],
   createdAt: 1000,
 };
@@ -175,7 +174,7 @@ describe("AnalyserManager", () => {
     vi.useRealTimers();
   });
 
-  it("share button calls clipboard.writeText with a dvw:1: string for that analyser", async () => {
+  it("share button calls clipboard.writeText with a dvw:2: string for that analyser", async () => {
     const user = userEvent.setup();
     const writeTextSpy = vi.spyOn(navigator.clipboard, "writeText");
 
@@ -195,7 +194,7 @@ describe("AnalyserManager", () => {
     });
 
     const calledWith = writeTextSpy.mock.calls[0][0];
-    expect(calledWith).toMatch(/^dvw:1:/);
+    expect(calledWith).toMatch(/^dvw:2:/);
 
     const decoded = decodeConfig(calledWith);
     expect(decoded).toHaveLength(1);

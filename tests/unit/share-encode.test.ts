@@ -3,14 +3,14 @@ import { encodeConfig, decodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
 
 const fixture: AnalyserConfig[] = [{
-  id: "a", name: "GA4", enabled: true, urlPattern: "google-analytics", source: "url",
+  id: "a", name: "GA4", enabled: true, urlPattern: "google-analytics",
   dsl: [{ op: "query-parse" }], createdAt: 0
 }];
 
 describe("share roundtrip", () => {
-  it("encodes with dvw:1: prefix", () => {
+  it("encodes with dvw:2: prefix", () => {
     const s = encodeConfig(fixture);
-    expect(s.startsWith("dvw:1:")).toBe(true);
+    expect(s.startsWith("dvw:2:")).toBe(true);
   });
   it("decodes back to the original", () => {
     expect(decodeConfig(encodeConfig(fixture))).toEqual(fixture);
@@ -19,7 +19,7 @@ describe("share roundtrip", () => {
     expect(() => decodeConfig("dvw:99:abc")).toThrow(/unsupported config version: 99/);
   });
   it("rejects garbled payload", () => {
-    expect(() => decodeConfig("dvw:1:###not-lz###")).toThrow();
+    expect(() => decodeConfig("dvw:2:###not-lz###")).toThrow();
   });
   it("rejects string not starting with dvw:", () => {
     expect(() => decodeConfig("not-a-dataviewer-string")).toThrow("not a dataviewer config string");

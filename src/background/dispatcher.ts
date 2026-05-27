@@ -1,11 +1,11 @@
-import type { AnalyserConfig, CapturedEvent, MatchResult } from "@/shared/types";
+import type { AnalyserConfig, CapturedEvent, MatchResult, SandboxInput } from "@/shared/types";
 import type { Settings } from "@/shared/settings";
 import { runDsl } from "@/shared/dsl";
 
 export type SandboxRunner = (
   analyserId: string,
   code: string,
-  input: unknown,
+  input: SandboxInput,
   settings: Settings,
 ) => Promise<{ result: unknown } | { error: string }>;
 
@@ -24,14 +24,6 @@ export function compileConfigs(configs: AnalyserConfig[]): CompiledConfig[] {
   });
 }
 
-function selectInput(ev: CapturedEvent, source: AnalyserConfig["source"]): unknown {
-  switch (source) {
-    case "reqBody": return ev.reqBody;
-    case "url": return ev.url;
-    case "resBody": return ev.resBody;
-  }
-}
-
 export async function dispatch(
   event: CapturedEvent,
   configs: CompiledConfig[],
@@ -44,19 +36,27 @@ export async function dispatch(
     if (re === null || !re.test(event.url)) continue;
 
     const t0 = performance.now();
-    const input = selectInput(event, cfg.source);
-    let dslOutput: unknown;
+    let dslOutput: unknown = null;
     let dslErr: string | undefined;
-    try {
-      dslOutput = await runDsl(cfg.dsl, input);
-    } catch (e) {
-      dslErr = (e as Error).message;
+    if (event.reqBody !== null && cfg.dsl.length > 0) {
+      try {
+        dslOutput = await runDsl(cfg.dsl, event.reqBody);
+      } catch (e) {
+        dslErr = (e as Error).message;
+      }
     }
+
+    const sandboxInput: SandboxInput = {
+      url: event.url,
+      method: event.method,
+      body: event.reqBody,
+      dslOutput,
+    };
 
     let sandboxOutput: unknown | undefined;
     let sbErr: string | undefined;
     if (!dslErr && cfg.sandboxCode) {
-      const r = await runSandbox(cfg.id, cfg.sandboxCode, dslOutput, settings);
+      const r = await runSandbox(cfg.id, cfg.sandboxCode, sandboxInput, settings);
       if ("result" in r) sandboxOutput = r.result;
       else sbErr = r.error;
     }

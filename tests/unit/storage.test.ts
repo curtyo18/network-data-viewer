@@ -20,7 +20,7 @@ describe("Storage", () => {
     expect(await s.getAnalysers()).toEqual([]);
   });
   it("writes and reads analyser configs", async () => {
-    const cfg: AnalyserConfig = { id: "x", name: "n", enabled: true, urlPattern: "p", source: "reqBody", dsl: [], createdAt: 0 };
+    const cfg: AnalyserConfig = { id: "x", name: "n", enabled: true, urlPattern: "p", dsl: [], createdAt: 0 };
     const s = new Storage(fakeStorage as unknown as chrome.storage.StorageArea);
     await s.setAnalysers([cfg]);
     expect(await s.getAnalysers()).toEqual([cfg]);

@@ -28,15 +28,14 @@ Open the side panel from the toolbar icon or via the extension menu.
 An analyser is a small config:
 
 - **URL pattern** — JavaScript regex matched against the request URL. Only matching requests run through the analyser.
-- **Source** — `url`, `reqBody`, or `resBody`: which part of the request to feed into the transform chain.
-- **DSL chain** — an ordered list of small transform steps (`json-parse`, `decode-base64`, `gunzip`, `query-parse`, `pluck`, `regex-extract`, `jsonpath`, ...). Each step's output becomes the next step's input.
-- **Sandbox code** (optional) — a small JS function body that takes the DSL output and returns whatever you want rendered. Sandboxed by Chrome — no `chrome.*` APIs, no cookies, no network.
+- **DSL chain** — an ordered list of small transform steps (`json-parse`, `decode-base64`, `gunzip`, `query-parse`, `pluck`, `regex-extract`, `jsonpath`, ...). The chain operates on the request body; each step's output becomes the next step's input.
+- **Sandbox code** (optional) — a small JS function body that receives `{url, method, body, dslOutput}` (the request plus the DSL chain's output) and returns whatever you want rendered. Sandboxed by Chrome — no `chrome.*` APIs, no cookies, no network.
 
 Three analysers ship by default: GA4, ContentSquare, Celebrus.
 
 ### Sharing
 
-Export the current analyser configs as a single compressed string starting with `dvw:1:`. Paste it into another browser via the Import dialog to install the same set.
+Export the current analyser configs as a single compressed string starting with `dvw:2:`. Paste it into another browser via the Import dialog to install the same set.
 
 ### Storage
 

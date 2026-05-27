@@ -19,7 +19,7 @@ function formatPreviewValue(v: unknown): string {
 }
 
 const EMPTY: AnalyserConfig = {
-  id: "", name: "", enabled: true, urlPattern: "", source: "reqBody",
+  id: "", name: "", enabled: true, urlPattern: "",
   dsl: [], sandboxCode: "", createdAt: 0
 };
 
@@ -104,14 +104,6 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
       <div>
         <label className="block text-slate-400">url regex</label>
         <input className="w-full bg-slate-900 border border-slate-700 px-2 py-1 rounded" value={cfg.urlPattern} onChange={e => update("urlPattern", e.target.value)} />
-      </div>
-      <div>
-        <label className="block text-slate-400">source</label>
-        <select className="w-full bg-slate-900 border border-slate-700 px-2 py-1 rounded" value={cfg.source} onChange={e => update("source", e.target.value as AnalyserConfig["source"])}>
-          <option value="reqBody">reqBody</option>
-          <option value="url">url</option>
-          <option value="resBody">resBody</option>
-        </select>
       </div>
       <div>
         <label className="block text-slate-400">dsl chain</label>

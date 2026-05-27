@@ -5,8 +5,7 @@ export const meta: AnalyserMeta = {
   name: "Celebrus",
   enabled: true,
   urlPattern: "celebrus[a-z0-9-]*\\.",
-  source: "reqBody",
   dsl: [],
-  seedVersion: 3,
+  seedVersion: 4,
   createdAt: 1737000000000,
 };

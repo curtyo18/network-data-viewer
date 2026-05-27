@@ -19,7 +19,6 @@ const baseConfig = {
   name: "n",
   enabled: true,
   urlPattern: "example",
-  source: "reqBody" as const,
   dsl: [],
   createdAt: 0
 };
@@ -87,7 +86,7 @@ describe("AnalyserConfigSchema seedVersion", () => {
   it("accepts a non-negative integer seedVersion", () => {
     expect(() =>
       AnalyserConfigSchema.parse({
-        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        id: "1", name: "n", enabled: true, urlPattern: "x",
         dsl: [], createdAt: 0, seedVersion: 2,
       })
     ).not.toThrow();
@@ -96,7 +95,7 @@ describe("AnalyserConfigSchema seedVersion", () => {
   it("accepts a config with no seedVersion (back-compat)", () => {
     expect(() =>
       AnalyserConfigSchema.parse({
-        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        id: "1", name: "n", enabled: true, urlPattern: "x",
         dsl: [], createdAt: 0,
       })
     ).not.toThrow();
@@ -105,7 +104,7 @@ describe("AnalyserConfigSchema seedVersion", () => {
   it("rejects a negative seedVersion", () => {
     expect(() =>
       AnalyserConfigSchema.parse({
-        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        id: "1", name: "n", enabled: true, urlPattern: "x",
         dsl: [], createdAt: 0, seedVersion: -1,
       })
     ).toThrow();
@@ -114,7 +113,7 @@ describe("AnalyserConfigSchema seedVersion", () => {
   it("accepts seedVersion: 0", () => {
     expect(() =>
       AnalyserConfigSchema.parse({
-        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        id: "1", name: "n", enabled: true, urlPattern: "x",
         dsl: [], createdAt: 0, seedVersion: 0,
       })
     ).not.toThrow();
@@ -123,9 +122,20 @@ describe("AnalyserConfigSchema seedVersion", () => {
   it("rejects a non-integer seedVersion", () => {
     expect(() =>
       AnalyserConfigSchema.parse({
-        id: "1", name: "n", enabled: true, urlPattern: "x", source: "url",
+        id: "1", name: "n", enabled: true, urlPattern: "x",
         dsl: [], createdAt: 0, seedVersion: 1.5,
       })
     ).toThrow();
+  });
+});
+
+describe("AnalyserConfigSchema strictness", () => {
+  it("rejects objects containing the dropped `source` field", () => {
+    const result = AnalyserConfigSchema.safeParse({
+      id: "x", name: "x", enabled: true, urlPattern: ".*",
+      source: "reqBody",
+      dsl: [], createdAt: 0,
+    });
+    expect(result.success).toBe(false);
   });
 });
