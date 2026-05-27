@@ -1,5 +1,5 @@
 export default function sandbox(input: unknown, settings: unknown): unknown {
-  const inp = (input && typeof input === "object" ? input : {}) as {
+  const inp = (input !== null && typeof input === "object" && !Array.isArray(input) ? input : {}) as {
     url?: unknown; method?: unknown; body?: unknown;
   };
   const url = typeof inp.url === "string" ? inp.url : "";

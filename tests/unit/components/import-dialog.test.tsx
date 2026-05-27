@@ -38,7 +38,7 @@ describe("ImportDialog", () => {
     unmount();
   });
 
-  it("valid dvw:1:… string → Decode shows preview, Install writes storage and calls onClose", async () => {
+  it("valid dvw:2:… string → Decode shows preview, Install writes storage and calls onClose", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
     chromeMock.setStored("analyserConfigs", []);
@@ -145,7 +145,7 @@ describe("ImportDialog", () => {
     const { unmount } = renderComponent(<ImportDialog onClose={onClose} />);
 
     const textarea = screen.getByRole("textbox");
-    await user.type(textarea, "dvw:1:NOTVALID!!!BAD");
+    await user.type(textarea, "dvw:2:NOTVALID!!!BAD");
 
     await user.click(screen.getByText("Decode"));
 

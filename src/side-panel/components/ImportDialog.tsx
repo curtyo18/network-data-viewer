@@ -35,7 +35,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }) {
     <div className="p-3 text-xs font-mono space-y-2">
       {state.kind === "input" && (
         <>
-          <label className="block text-slate-400">paste dvw:1:… string</label>
+          <label className="block text-slate-400">paste dvw:2:… string</label>
           <textarea
             className="w-full h-24 bg-slate-900 border border-slate-700 px-2 py-1 rounded"
             value={text}

@@ -20,7 +20,7 @@ beforeEach(() => {
 });
 
 describe("ExportButton", () => {
-  it("click → clipboard.writeText called with a dvw:1: string", async () => {
+  it("click → clipboard.writeText called with a dvw:2: string", async () => {
     // userEvent.setup() installs its own clipboard stub on navigator.clipboard.
     // We spy on that stub's writeText after setup so our spy sees the real call.
     const user = userEvent.setup();
@@ -41,7 +41,7 @@ describe("ExportButton", () => {
     });
 
     const calledWith = writeTextSpy.mock.calls[0][0];
-    expect(calledWith).toMatch(/^dvw:1:/);
+    expect(calledWith).toMatch(/^dvw:2:/);
 
     writeTextSpy.mockRestore();
     unmount();
@@ -101,7 +101,7 @@ describe("ExportButton", () => {
     });
 
     const calledWith = writeTextSpy.mock.calls[0][0];
-    expect(calledWith).toMatch(/^dvw:1:/);
+    expect(calledWith).toMatch(/^dvw:2:/);
 
     writeTextSpy.mockRestore();
     unmount();
