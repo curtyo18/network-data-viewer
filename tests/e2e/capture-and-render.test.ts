@@ -290,6 +290,57 @@ test("filter bar narrows visible rows by analyser name", async () => {
   }
 });
 
+test("pause suppresses new captures; resume restores them", async () => {
+  const { ctx, sw, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-pause",
+      name: "PauseTest",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]
+  });
+  try {
+    await ctx.route(/test-fixture\.local/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    await ctx.route(/google-analytics\.com\/g\/collect/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "OK" });
+    });
+
+    await page.goto("https://test-fixture.local/");
+
+    // Pause via storage (avoids flakiness from button timing)
+    await sw.evaluate(async () => {
+      await chrome.storage.local.set({ settings: { showRaw: false, paused: true } });
+    });
+
+    // Fire a fetch — should be dropped by the SW early-return
+    const responseReady1 = page.waitForResponse(/google-analytics\.com\/g\/collect/);
+    await page.click("#fire-fetch");
+    await responseReady1;
+
+    // No PauseTest row should appear; polling assertion replaces the sleep
+    await expect(panel.locator("text=PauseTest")).toHaveCount(0, { timeout: 3000 });
+
+    // Unpause
+    await sw.evaluate(async () => {
+      await chrome.storage.local.set({ settings: { showRaw: false, paused: false } });
+    });
+
+    // Fire another fetch — should now be captured
+    const responseReady2 = page.waitForResponse(/google-analytics\.com\/g\/collect/);
+    await page.click("#fire-fetch");
+    await responseReady2;
+
+    await expect(panel.locator("text=PauseTest").first()).toBeVisible({ timeout: 10000 });
+  } finally {
+    await ctx.close();
+  }
+});
+
 test("clear button removes all rows from the events list", async () => {
   const { ctx, panel, page } = await setupHarness({
     seed: [{
@@ -315,7 +366,7 @@ test("clear button removes all rows from the events list", async () => {
 
     await expect(panel.locator("text=ClearTest").first()).toBeVisible({ timeout: 5000 });
 
-    await panel.getByRole("button", { name: "Clear" }).click();
+    await panel.getByRole("button", { name: "Clear events" }).click();
 
     await expect(panel.locator("text=ClearTest")).toHaveCount(0, { timeout: 3000 });
   } finally {

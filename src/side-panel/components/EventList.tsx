@@ -3,7 +3,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { EventCard } from "./EventCard";
 import type { MatchResult } from "@/shared/types";
 
-export function EventList({ events }: { events: MatchResult[] }) {
+export function EventList({ events, filter, onEditAnalyser }: { events: MatchResult[]; filter?: string; onEditAnalyser?: (id: string) => void }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: events.length,
@@ -26,7 +26,7 @@ export function EventList({ events }: { events: MatchResult[] }) {
             ref={virtualizer.measureElement}
             style={{ position: "absolute", top: 0, left: 0, right: 0, transform: `translateY(${vi.start}px)` }}
           >
-            <EventCard r={events[vi.index]} />
+            <EventCard r={events[vi.index]} filter={filter} onEditAnalyser={onEditAnalyser} />
           </div>
         ))}
       </div>

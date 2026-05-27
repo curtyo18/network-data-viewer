@@ -71,7 +71,7 @@ describe("dispatch", () => {
   it("passes settings to the sandbox runner", async () => {
     const sandbox = vi.fn(async () => ({ result: 1 }));
     const c = cfg({ sandboxCode: "return 1;" });
-    const customSettings: Settings = { showRaw: true };
+    const customSettings: Settings = { showRaw: true, paused: false };
     await dispatch(makeEvent(), compileConfigs([c]), customSettings, sandbox);
     expect(sandbox).toHaveBeenCalledWith(c.id, c.sandboxCode, { a: 1 }, customSettings);
   });

@@ -208,4 +208,77 @@ describe("ConfigEditor", () => {
 
     unmount();
   });
+
+  it("saving a config that triggers a lint warning shows the banner; upsert NOT called", async () => {
+    const user = userEvent.setup();
+    chromeMock.setStored("analyserConfigs", []);
+    const onClose = vi.fn();
+    // sandbox accesses input as object but no DSL to parse it — triggers empty-dsl-on-typed-source
+    const lintCfg: AnalyserConfig = { ...BASE, dsl: [], sandboxCode: "return input.value;" };
+    const { unmount } = renderComponent(<ConfigEditor initial={lintCfg} onClose={onClose} />);
+
+    await user.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Lint warnings/)).toBeInTheDocument();
+      expect(screen.getByText("Save anyway")).toBeInTheDocument();
+    });
+
+    // upsert must NOT have been called
+    expect(onClose).not.toHaveBeenCalled();
+    const stored = chromeMock.getStored("analyserConfigs");
+    expect(stored).toEqual([]);
+
+    unmount();
+  });
+
+  it("clicking 'Save anyway' persists the config despite lint warnings", async () => {
+    const user = userEvent.setup();
+    chromeMock.setStored("analyserConfigs", []);
+    const onClose = vi.fn();
+    const lintCfg: AnalyserConfig = { ...BASE, dsl: [], sandboxCode: "return input.value;" };
+    const { unmount } = renderComponent(<ConfigEditor initial={lintCfg} onClose={onClose} />);
+
+    await user.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(screen.getByText("Save anyway")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText("Save anyway"));
+
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalled();
+    });
+
+    const stored = chromeMock.getStored("analyserConfigs") as AnalyserConfig[];
+    expect(stored).toHaveLength(1);
+    expect(stored[0].id).toBe("cfg-1");
+
+    unmount();
+  });
+
+  it("editing any field after lint warnings clears the warning banner", async () => {
+    const user = userEvent.setup();
+    chromeMock.setStored("analyserConfigs", []);
+    const lintCfg: AnalyserConfig = { ...BASE, dsl: [], sandboxCode: "return input.value;" };
+    const { unmount } = renderComponent(<ConfigEditor initial={lintCfg} onClose={() => {}} />);
+
+    await user.click(screen.getByText("Save"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Lint warnings/)).toBeInTheDocument();
+    });
+
+    // Edit any field to clear warnings
+    const nameInput = screen.getByDisplayValue("Test Analyser");
+    await user.clear(nameInput);
+    await user.type(nameInput, "Updated");
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Lint warnings/)).not.toBeInTheDocument();
+    });
+
+    unmount();
+  });
 });
