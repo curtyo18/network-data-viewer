@@ -3,6 +3,7 @@ import type { AnalyserConfig, DslStep } from "@/shared/types";
 import { AnalyserConfigSchema } from "@/shared/schema";
 import { useAnalysers } from "@/side-panel/lib/use-analysers";
 import { runDslWithSteps, type PreviewRow } from "@/shared/dsl/preview";
+import { lintAnalyser, type LintIssue } from "@/shared/dsl/lint";
 
 function formatPreviewValue(v: unknown): string {
   const MAX = 500;
@@ -26,6 +27,8 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
   const { upsert } = useAnalysers();
   const [cfg, setCfg] = useState<AnalyserConfig>(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<LintIssue[]>([]);
+  const [overrideWarnings, setOverrideWarnings] = useState(false);
   const [sample, setSample] = useState<string>("");
   const [preview, setPreview] = useState<{ rows: PreviewRow[]; error: string | null } | null>(null);
   const [previewing, setPreviewing] = useState(false);
@@ -33,12 +36,16 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
   useEffect(() => {
     setCfg(initial ?? { ...EMPTY, id: crypto.randomUUID(), createdAt: Date.now() });
     setError(null);
+    setWarnings([]);
+    setOverrideWarnings(false);
   }, [initial]);
 
   useEffect(() => { setPreview(null); }, [cfg.dsl]);
 
   function update<K extends keyof AnalyserConfig>(k: K, v: AnalyserConfig[K]) {
     setError(null);
+    setWarnings([]);
+    setOverrideWarnings(false);
     setCfg(prev => ({ ...prev, [k]: v }));
   }
 
@@ -67,7 +74,7 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
     }
   }
 
-  async function save() {
+  async function save(force = false) {
     try {
       new RegExp(cfg.urlPattern);
     } catch {
@@ -78,6 +85,12 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
     const validation = AnalyserConfigSchema.safeParse(cfg);
     if (!validation.success) {
       setError(validation.error.errors[0]?.message ?? "validation failed");
+      return;
+    }
+
+    const lintIssues = lintAnalyser(cfg);
+    if (lintIssues.length > 0 && !force && !overrideWarnings) {
+      setWarnings(lintIssues);
       return;
     }
 
@@ -166,8 +179,22 @@ export function ConfigEditor({ initial, onClose }: { initial: AnalyserConfig | n
         <textarea className="w-full h-24 bg-slate-900 border border-slate-700 px-2 py-1 rounded font-mono" value={cfg.sandboxCode ?? ""} onChange={e => update("sandboxCode", e.target.value || undefined)} placeholder="return input;" />
       </div>
       {error && <div className="text-rose-400">{error}</div>}
+      {warnings.length > 0 && !overrideWarnings && (
+        <div className="border border-amber-700/50 bg-amber-900/30 text-amber-200 text-xs p-2 rounded space-y-1">
+          <div className="font-semibold">Lint warnings ({warnings.length}):</div>
+          {warnings.map((w, i) => (
+            <div key={i}><span className="text-amber-400">[{w.rule}]</span> {w.message}</div>
+          ))}
+          <button
+            className="mt-1 px-2 py-1 text-xs bg-amber-800 text-amber-100 rounded"
+            onClick={() => { setOverrideWarnings(true); setWarnings([]); save(true); }}
+          >
+            Save anyway
+          </button>
+        </div>
+      )}
       <div className="flex gap-2">
-        <button className="px-3 py-1 bg-violet-700 rounded text-white" onClick={save}>Save</button>
+        <button className="px-3 py-1 bg-violet-700 rounded text-white" onClick={() => save()}>Save</button>
         <button className="px-3 py-1 bg-slate-800 rounded text-slate-200" onClick={onClose}>Cancel</button>
       </div>
     </div>
