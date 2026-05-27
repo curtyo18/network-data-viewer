@@ -5,7 +5,6 @@ export const meta: AnalyserMeta = {
   name: "GA4",
   enabled: true,
   urlPattern: "google-analytics\\.com",
-  source: "url",
   dsl: [{ op: "query-parse" }],
   seedVersion: 1,
   createdAt: 0,

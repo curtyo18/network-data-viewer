@@ -3,7 +3,7 @@ import { encodeConfig, decodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
 
 const fixture: AnalyserConfig[] = [{
-  id: "a", name: "GA4", enabled: true, urlPattern: "google-analytics", source: "url",
+  id: "a", name: "GA4", enabled: true, urlPattern: "google-analytics",
   dsl: [{ op: "query-parse" }], createdAt: 0
 }];
 

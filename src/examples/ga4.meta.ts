@@ -5,7 +5,6 @@ export const meta: AnalyserMeta = {
   name: "GA4",
   enabled: true,
   urlPattern: "google-analytics\\.com/g/collect",
-  source: "url",
   dsl: [
     { op: "query-parse" },
     { op: "pluck", keys: ["v", "tid", "cid", "dl", "dt", "en", "ep.page_location", "ep.page_title"] },

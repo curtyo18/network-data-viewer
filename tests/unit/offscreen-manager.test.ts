@@ -3,8 +3,10 @@ import { OffscreenManager } from "@/background/offscreen-manager";
 import { MSG } from "@/shared/messages";
 import type { Settings } from "@/shared/settings";
 import { DEFAULT_SETTINGS } from "@/shared/settings";
+import type { SandboxInput } from "@/shared/types";
 
 const SETTINGS: Settings = { ...DEFAULT_SETTINGS };
+const DUMMY_INPUT: SandboxInput = { url: "https://x.com", method: "POST", body: null, dslOutput: null };
 
 function makeChromeStub() {
   const messageListeners = new Set<(msg: unknown, sender: unknown) => unknown>();
@@ -63,7 +65,7 @@ describe("OffscreenManager", () => {
       makeChromeStub();
       const manager = new OffscreenManager();
 
-      const resultPromise = manager.run("a1", "return 1;", {}, SETTINGS);
+      const resultPromise = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
 
       // Advance past the 1000 ms timeout.
       await vi.advanceTimersByTimeAsync(1000);
@@ -76,7 +78,7 @@ describe("OffscreenManager", () => {
       const { sendMessage } = makeChromeStub();
       const manager = new OffscreenManager();
 
-      const resultPromise = manager.run("a1", "return 1;", {}, SETTINGS);
+      const resultPromise = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await vi.advanceTimersByTimeAsync(1000);
       await resultPromise;
 
@@ -91,7 +93,7 @@ describe("OffscreenManager", () => {
       getContexts.mockResolvedValue([{ contextType: "OFFSCREEN_DOCUMENT" }] as never);
       const manager = new OffscreenManager();
 
-      const resultPromise = manager.run("a1", "return 1;", {}, SETTINGS);
+      const resultPromise = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await vi.advanceTimersByTimeAsync(1000);
       await resultPromise;
 
@@ -108,7 +110,7 @@ describe("OffscreenManager", () => {
       const manager = new OffscreenManager();
 
       // First run — supply a reply so it resolves cleanly.
-      const first = manager.run("a1", "return 1;", {}, SETTINGS);
+      const first = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await reply({ result: 42 });
       await first;
 
@@ -122,7 +124,7 @@ describe("OffscreenManager", () => {
       // Second run for the same analyser — reset the run-transform call index so
       // reply() can find the new one.
       sendMessage.mockClear();
-      const second = manager.run("a1", "return 1;", {}, SETTINGS);
+      const second = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await reply({ result: 43 });
       await second;
 
@@ -135,7 +137,7 @@ describe("OffscreenManager", () => {
       const manager = new OffscreenManager();
 
       // First run — resolves successfully.
-      const first = manager.run("a1", "return 1;", {}, SETTINGS);
+      const first = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await reply({ result: 42 });
       await first;
 
@@ -145,7 +147,7 @@ describe("OffscreenManager", () => {
       // Wipe call history so we can count CREATE_IFRAME for the next run alone.
       sendMessage.mockClear();
 
-      const second = manager.run("a1", "return 1;", {}, SETTINGS);
+      const second = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await reply({ result: 43 });
       await second;
 
@@ -161,7 +163,7 @@ describe("OffscreenManager", () => {
       const manager = new OffscreenManager();
 
       // Establish the analyser in the cache with a successful run.
-      const first = manager.run("a1", "return 1;", {}, SETTINGS);
+      const first = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
       await reply({ result: 42 });
       await first;
 
@@ -180,7 +182,7 @@ describe("OffscreenManager", () => {
       const stub = makeChromeStub();
       stub.createDocument.mockRejectedValueOnce(new Error("Page failed to load"));
       const om = new OffscreenManager();
-      const result = await om.run("a", "code", null, { showRaw: false, paused: false });
+      const result = await om.run("a", "code", DUMMY_INPUT, { showRaw: false, paused: false });
       expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*Page failed to load/) });
     });
   });

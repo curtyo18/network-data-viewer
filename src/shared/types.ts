@@ -30,18 +30,26 @@ export type DslStep =
 
 export type DslOpName = DslStep["op"];
 
-export type AnalyserSource = "reqBody" | "url" | "resBody";
-
 export type AnalyserConfig = {
   id: string;
   name: string;
   enabled: boolean;
   urlPattern: string;
-  source: AnalyserSource;
   dsl: DslStep[];
   sandboxCode?: string;
   seedVersion?: number;
   createdAt: number;
+};
+
+// The argument shape every sandbox function receives as its first parameter.
+// `body` is the raw request body (null for body-less requests).
+// `dslOutput` is the result of running the analyser's DSL chain over the body
+// (null when body is null or the DSL chain is empty).
+export type SandboxInput = {
+  url: string;
+  method: string;
+  body: string | null;
+  dslOutput: unknown;
 };
 
 export type AnalyserError = {

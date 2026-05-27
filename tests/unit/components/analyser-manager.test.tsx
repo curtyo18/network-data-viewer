@@ -11,7 +11,6 @@ const BASE: AnalyserConfig = {
   name: "My Analyser",
   enabled: true,
   urlPattern: "example\\.com",
-  source: "reqBody",
   dsl: [],
   createdAt: 1000,
 };

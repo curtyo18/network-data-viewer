@@ -87,8 +87,12 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
     return out;
   }
 
-  if (typeof input !== "string") return null;
-  const body = decodeBody(input);
+  // Pipeline change: `input` is now { url, method, body, dslOutput }. Pull the
+  // raw body off and proceed as before.
+  if (input === null || typeof input !== "object" || Array.isArray(input)) return null;
+  const rawBody = (input as { body?: unknown }).body;
+  if (typeof rawBody !== "string") return null;
+  const body = decodeBody(rawBody);
   if (body === null) return null;
 
   const showRaw = readShowRaw(settings);

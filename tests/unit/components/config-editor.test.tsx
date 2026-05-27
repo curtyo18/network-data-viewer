@@ -10,7 +10,6 @@ const BASE: AnalyserConfig = {
   name: "Test Analyser",
   enabled: true,
   urlPattern: "example\\.com",
-  source: "reqBody",
   dsl: [],
   createdAt: 1000,
 };

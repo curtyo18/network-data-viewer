@@ -36,10 +36,9 @@ describe("celebrus meta", () => {
 
   it("dsl is empty so the raw request body flows straight to the sandbox", () => {
     expect(celebrus.dsl).toEqual([]);
-    expect(celebrus.source).toBe("reqBody");
   });
 
-  it("seedVersion bumped to 3 so existing v2 installs receive the fix on update", () => {
-    expect(celebrus.seedVersion).toBe(3);
+  it("seedVersion bumped to 4 so existing v3 installs receive the fix on update", () => {
+    expect(celebrus.seedVersion).toBe(4);
   });
 });

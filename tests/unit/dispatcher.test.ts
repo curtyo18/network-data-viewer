@@ -12,7 +12,7 @@ const makeEvent = (over: Partial<CapturedEvent> = {}): CapturedEvent => ({
 });
 
 const cfg = (over: Partial<AnalyserConfig>): AnalyserConfig => ({
-  id: "c1", name: "C", enabled: true, urlPattern: "x\\.com", source: "reqBody",
+  id: "c1", name: "C", enabled: true, urlPattern: "x\\.com",
   dsl: [{ op: "json-parse" }], createdAt: 0, ...over
 });
 
@@ -28,7 +28,7 @@ describe("dispatch", () => {
     expect(res).toEqual([]);
   });
 
-  it("runs DSL chain on reqBody for matching analyser", async () => {
+  it("runs DSL chain on body for matching analyser", async () => {
     const res = await dispatch(makeEvent(), compileConfigs([cfg({})]), SETTINGS, noSandbox);
     expect(res).toHaveLength(1);
     expect(res[0].dslOutput).toEqual({ a: 1 });
@@ -62,18 +62,42 @@ describe("dispatch", () => {
     expect(res).toEqual([]);
   });
 
-  it("uses url as DSL input when source is 'url'", async () => {
-    const c = cfg({ source: "url", dsl: [{ op: "query-parse" }] });
-    const res = await dispatch(makeEvent({ url: "https://x.com/a?k=v" }), compileConfigs([c]), SETTINGS, noSandbox);
-    expect(res[0].dslOutput).toEqual({ k: "v" });
-  });
-
-  it("passes settings to the sandbox runner", async () => {
+  it("passes SandboxInput and settings to the sandbox runner", async () => {
     const sandbox = vi.fn(async () => ({ result: 1 }));
     const c = cfg({ sandboxCode: "return 1;" });
     const customSettings: Settings = { showRaw: true, paused: false };
-    await dispatch(makeEvent(), compileConfigs([c]), customSettings, sandbox);
-    expect(sandbox).toHaveBeenCalledWith(c.id, c.sandboxCode, { a: 1 }, customSettings);
+    const ev = makeEvent();
+    await dispatch(ev, compileConfigs([c]), customSettings, sandbox);
+    expect(sandbox).toHaveBeenCalledWith(
+      c.id,
+      c.sandboxCode,
+      { url: ev.url, method: ev.method, body: ev.reqBody, dslOutput: { a: 1 } },
+      customSettings,
+    );
+  });
+
+  it("passes body: null and dslOutput: null when reqBody is null", async () => {
+    const sandbox = vi.fn(async () => ({ result: 1 }));
+    const c = cfg({ sandboxCode: "return 1;", dsl: [] });
+    const ev = makeEvent({ method: "GET", reqBody: null });
+    await dispatch(ev, compileConfigs([c]), SETTINGS, sandbox);
+    expect(sandbox).toHaveBeenCalledWith(
+      c.id,
+      c.sandboxCode,
+      { url: ev.url, method: "GET", body: null, dslOutput: null },
+      SETTINGS,
+    );
+  });
+
+  it("runs DSL chain on empty-string body without crashing", async () => {
+    const sandbox = vi.fn(async () => ({ result: "ok" }));
+    const c = cfg({ sandboxCode: "return ...;", dsl: [{ op: "to-string" }] });
+    const ev = makeEvent({ method: "POST", reqBody: "" });
+    const res = await dispatch(ev, compileConfigs([c]), SETTINGS, sandbox);
+    // Empty string is non-null, so DSL runs; `to-string` on "" yields "".
+    expect(res).toHaveLength(1);
+    expect(res[0].dslOutput).toBe("");
+    expect(res[0].error).toBeUndefined();
   });
 
   it("unwraps { fanOut: [...] } into N MatchResults", async () => {

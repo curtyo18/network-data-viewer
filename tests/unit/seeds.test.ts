@@ -16,4 +16,19 @@ describe("seed analysers", () => {
     const names = seeds.map(s => s.name).sort();
     expect(names).toEqual(["Celebrus", "ContentSquare", "GA4"]);
   });
+
+  it("no seed carries the dropped `source` field", async () => {
+    const seeds = await buildAllSeeds(EXAMPLES_DIR);
+    for (const seed of seeds) {
+      expect(seed).not.toHaveProperty("source");
+    }
+  });
+
+  it("every seed declares a seedVersion", async () => {
+    const seeds = await buildAllSeeds(EXAMPLES_DIR);
+    for (const seed of seeds) {
+      expect(typeof seed.seedVersion).toBe("number");
+      expect(seed.seedVersion).toBeGreaterThanOrEqual(1);
+    }
+  });
 });

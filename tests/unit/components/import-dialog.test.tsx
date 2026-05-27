@@ -11,7 +11,6 @@ const SAMPLE_CONFIG: AnalyserConfig = {
   name: "Imported Analyser",
   enabled: true,
   urlPattern: "import\\.test",
-  source: "reqBody",
   dsl: [],
   createdAt: 2000,
 };
@@ -83,7 +82,6 @@ describe("ImportDialog", () => {
       name: "Brand New",
       enabled: true,
       urlPattern: "new\\.test",
-      source: "reqBody",
       dsl: [],
       createdAt: 3000,
     };

@@ -10,7 +10,6 @@ const SAMPLE: AnalyserConfig = {
   name: "Export Test",
   enabled: true,
   urlPattern: "example\\.com",
-  source: "reqBody",
   dsl: [],
   createdAt: 3000,
 };

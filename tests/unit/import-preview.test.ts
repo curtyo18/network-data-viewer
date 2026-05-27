@@ -6,7 +6,6 @@ function makeAnalyser(overrides: Partial<AnalyserConfig> & { id: string; name: s
   return {
     enabled: true,
     urlPattern: "example\\.com",
-    source: "reqBody",
     dsl: [],
     createdAt: 1000,
     ...overrides,
@@ -70,8 +69,8 @@ describe("buildPreview", () => {
     // Construct two objects with the same data but deliberately different key order
     const base = makeAnalyser({ id: "a", name: "A", seedVersion: 1 });
     // Build a copy with keys inserted in a different order
-    const { id, name, enabled, urlPattern, source, dsl, createdAt, seedVersion } = base;
-    const reordered = { name, id, source, urlPattern, enabled, createdAt, dsl, seedVersion } as AnalyserConfig;
+    const { id, name, enabled, urlPattern, dsl, createdAt, seedVersion } = base;
+    const reordered = { name, id, urlPattern, enabled, createdAt, dsl, seedVersion } as AnalyserConfig;
     const result = buildPreview([base], [reordered]);
     expect(result.unchanged).toHaveLength(1);
     expect(result.replace).toHaveLength(0);

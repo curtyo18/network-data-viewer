@@ -5,7 +5,6 @@ export const meta: AnalyserMeta = {
   name: "ContentSquare",
   enabled: true,
   urlPattern: "(\\.contentsquare\\.|cs-data\\.|c\\.contentsquare\\.)",
-  source: "reqBody",
   dsl: [{ op: "json-parse" }],
   seedVersion: 1,
   createdAt: 1737000000000,

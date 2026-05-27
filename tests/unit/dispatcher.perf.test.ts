@@ -16,7 +16,6 @@ describe("dispatcher performance budget", () => {
       name: `Analyser ${i}`,
       enabled: true,
       urlPattern: i === 0 ? "google-analytics\\.com" : `not-this-${i}\\.com`,
-      source: "url",
       dsl: [{ op: "query-parse" }, { op: "pluck", keys: ["v", "tid", "cid"] }],
       createdAt: 0,
     }));
