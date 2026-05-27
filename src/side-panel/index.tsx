@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEventStream } from "./lib/port";
 import { useExport } from "./lib/use-export";
+import { useAnalysers } from "./lib/use-analysers";
 import { EventList } from "./components/EventList";
 import { AnalyserManager } from "./components/AnalyserManager";
 import { ConfigEditor } from "./components/ConfigEditor";
@@ -24,6 +25,12 @@ function App() {
   const [filter, setFilter] = useState("");
   const filterInputRef = useRef<HTMLInputElement>(null);
   const { copy: exportCopy } = useExport();
+  const { analysers } = useAnalysers();
+
+  function openEditFor(id: string) {
+    const cfg = analysers.find(a => a.id === id);
+    if (cfg) setMode({ kind: "edit", cfg });
+  }
 
   const filteredEvents = useMemo(() => {
     if (!filter.trim()) return events;
@@ -135,7 +142,7 @@ function App() {
         </div>
       )}
       <main className="flex-1 overflow-hidden">
-        {mode.kind === "events" && <EventList events={filteredEvents} filter={filter} />}
+        {mode.kind === "events" && <EventList events={filteredEvents} filter={filter} onEditAnalyser={openEditFor} />}
         {mode.kind === "manage" && <AnalyserManager onEdit={cfg => setMode({ kind: "edit", cfg })} />}
         {mode.kind === "edit" && <ConfigEditor initial={mode.cfg} onClose={() => setMode({ kind: "manage" })} />}
         {mode.kind === "import" && <ImportDialog onClose={() => setMode({ kind: "manage" })} />}
