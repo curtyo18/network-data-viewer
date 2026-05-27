@@ -3,6 +3,7 @@ import { screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chromeMock, renderComponent } from "./test-utils";
 import { AnalyserManager } from "@/side-panel/components/AnalyserManager";
+import { decodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
 
 const BASE: AnalyserConfig = {
@@ -169,6 +170,102 @@ describe("AnalyserManager", () => {
     await waitFor(() => {
       expect(screen.getByRole("button", { name: /1 errors/ })).toBeInTheDocument();
     }, { timeout: 3000 });
+
+    unmount();
+    vi.useRealTimers();
+  });
+
+  it("share button calls clipboard.writeText with a dvw:1: string for that analyser", async () => {
+    const user = userEvent.setup();
+    const writeTextSpy = vi.spyOn(navigator.clipboard, "writeText");
+
+    const cfg = makeAnalyser();
+    chromeMock.setStored("analyserConfigs", [cfg]);
+
+    const { unmount } = renderComponent(<AnalyserManager onEdit={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("My Analyser")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /Copy share string for My Analyser/ }));
+
+    await waitFor(() => {
+      expect(writeTextSpy).toHaveBeenCalledOnce();
+    });
+
+    const calledWith = writeTextSpy.mock.calls[0][0];
+    expect(calledWith).toMatch(/^dvw:1:/);
+
+    const decoded = decodeConfig(calledWith);
+    expect(decoded).toHaveLength(1);
+    expect(decoded[0].id).toBe("a1");
+
+    writeTextSpy.mockRestore();
+    unmount();
+  });
+
+  it("share button string decodes to only that analyser when multiple exist", async () => {
+    const user = userEvent.setup();
+    const writeTextSpy = vi.spyOn(navigator.clipboard, "writeText");
+
+    const cfg1 = makeAnalyser();
+    const cfg2 = makeAnalyser({ id: "a2", name: "Second" });
+    chromeMock.setStored("analyserConfigs", [cfg1, cfg2]);
+
+    const { unmount } = renderComponent(<AnalyserManager onEdit={() => {}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Second")).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /Copy share string for Second/ }));
+
+    await waitFor(() => {
+      expect(writeTextSpy).toHaveBeenCalledOnce();
+    });
+
+    const decoded = decodeConfig(writeTextSpy.mock.calls[0][0]);
+    expect(decoded).toHaveLength(1);
+    expect(decoded[0].id).toBe("a2");
+
+    writeTextSpy.mockRestore();
+    unmount();
+  });
+
+  it("share button label flips to 'Copied!' then reverts after timeout", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+    const cfg = makeAnalyser();
+    chromeMock.setStored("analyserConfigs", [cfg]);
+
+    const { unmount } = renderComponent(<AnalyserManager onEdit={() => {}} />);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Copy share string for My Analyser/ })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole("button", { name: /Copy share string for My Analyser/ }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Copy share string for My Analyser/ })).toHaveTextContent("Copied!");
+    }, { timeout: 500 });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1600);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Copy share string for My Analyser/ })).toHaveTextContent("share");
+    }, { timeout: 500 });
 
     unmount();
     vi.useRealTimers();

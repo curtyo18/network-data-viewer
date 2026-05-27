@@ -2,10 +2,12 @@ import { useState } from "react";
 import type { AnalyserConfig } from "@/shared/types";
 import { useAnalysers } from "@/side-panel/lib/use-analysers";
 import { useAnalyserErrors } from "@/side-panel/lib/use-analyser-errors";
+import { useExport } from "@/side-panel/lib/use-export";
 
 export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | null) => void }) {
   const { analysers, toggle, remove } = useAnalysers();
   const { errors } = useAnalyserErrors();
+  const { copyOne, copiedId } = useExport();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
@@ -32,6 +34,14 @@ export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | nul
                     ● {errors[a.id].length}
                   </button>
                 ) : null}
+                <button
+                  className="text-slate-400 hover:text-slate-100"
+                  onClick={() => copyOne(a)}
+                  title="Copy share string for this analyser"
+                  aria-label={`Copy share string for ${a.name}`}
+                >
+                  {copiedId === a.id ? "Copied!" : "share"}
+                </button>
                 <button className="text-slate-400 hover:text-slate-100" onClick={() => onEdit(a)}>edit</button>
                 <button className="text-rose-400 hover:text-rose-300" onClick={() => remove(a.id)}>×</button>
               </div>
