@@ -52,6 +52,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // Only accept messages originating from this extension's own contexts
+  // (content-script bridge, side panel). No externally_connectable is declared,
+  // but this fails closed against any unexpected cross-extension sender.
+  if (sender.id !== chrome.runtime.id) return false;
   if (msg?.type === MSG.GET_ANALYSER_ERRORS) {
     sendResponse({ errors: errorStore.snapshot() });
     return false;
