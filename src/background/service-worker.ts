@@ -71,7 +71,6 @@ async function handleCapturedEvent(raw: unknown, sender: chrome.runtime.MessageS
 
   if (configCache === null) configCache = compileConfigs(await storage.getAnalysers());
   if (settingsCache === null) settingsCache = await storage.getSettings();
-  if (settingsCache.paused) return;
   const results: MatchResult[] = await dispatch(enriched, configCache, settingsCache, offscreen.run);
 
   for (const r of results) {
