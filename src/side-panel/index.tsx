@@ -62,18 +62,6 @@ function App() {
     };
   }, []);
 
-  const togglePaused = useCallback(async () => {
-    const previous = settings;
-    const next: Settings = { ...previous, paused: !previous.paused };
-    setSettings(next);
-    try {
-      await chrome.storage.local.set({ [STORAGE_KEY_SETTINGS]: next });
-    } catch (e) {
-      console.error("[settings] failed to persist paused toggle", e);
-      setSettings(previous);
-    }
-  }, [settings]);
-
   const toggleShowRaw = useCallback(async () => {
     const previous = settings;
     const next: Settings = { ...previous, showRaw: !previous.showRaw };
@@ -108,18 +96,10 @@ function App() {
         void exportCopy();
         return;
       }
-      if (meta && e.key.toLowerCase() === "p" && mode.kind === "events") {
-        // Chrome reserves Ctrl+P for the print dialog in most surfaces, but in a side-panel
-        // extension page the extension's keydown listener fires first and preventDefault()
-        // suppresses the browser default — so this binding works here without conflict.
-        e.preventDefault();
-        void togglePaused();
-        return;
-      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, clearEvents, exportCopy, togglePaused, toggleShowRaw]);
+  }, [mode, clearEvents, exportCopy, toggleShowRaw]);
 
   return (
     <div className="h-screen flex flex-col">
@@ -129,14 +109,6 @@ function App() {
           <button className={`px-2 py-1 text-xs rounded ${mode.kind === "manage" ? "bg-violet-700 text-white" : "bg-slate-800 text-slate-200"}`} onClick={() => setMode({ kind: "manage" })}>analysers</button>
         </div>
         <div className="flex gap-2">
-          <button
-            className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200"
-            onClick={togglePaused}
-            title={settings.paused ? "Resume capture (Ctrl+P)" : "Pause capture (Ctrl+P)"}
-            aria-label={settings.paused ? "Resume capture" : "Pause capture"}
-          >
-            {settings.paused ? "▶ Resume" : "❚❚ Pause"}
-          </button>
           <label className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-800 rounded text-slate-200 cursor-pointer">
             <input type="checkbox" checked={settings.showRaw} onChange={toggleShowRaw} />
             show raw
@@ -155,11 +127,6 @@ function App() {
           <ExportButton />
         </div>
       </header>
-      {settings.paused && (
-        <div className="px-2 py-1 text-xs bg-amber-900/40 text-amber-200 border-b border-amber-800/50">
-          Capture paused — no new events will be recorded.
-        </div>
-      )}
       {mode.kind === "events" && events.length > 0 && (
         <div className="px-2 pt-2 pb-1 border-b border-slate-800">
           <input
