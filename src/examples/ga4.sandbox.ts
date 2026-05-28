@@ -67,7 +67,8 @@ export default function sandbox(input: unknown, settings: unknown): unknown {
         const isNum = m[1].endsWith("n");
         if (isNum) {
           if (v === "") continue;
-          out[`${scope}:${m[2]}`] = Number(v);
+          const n = Number(v);
+          out[`${scope}:${m[2]}`] = Number.isFinite(n) ? n : v;
         } else {
           out[`${scope}:${m[2]}`] = v;
         }

@@ -96,7 +96,23 @@ export async function extractSandboxBody(sandboxPath: string): Promise<string> {
       `analyser-seeds: ${sandboxPath} default export must be a function declaration (function sandbox(...) { ... }), not an arrow function or method shorthand`
     );
   }
-  const openIdx = source.indexOf("{");
+  // Find the body's opening brace by first skipping past the parameter list, so
+  // a brace inside the signature — a default param (`settings = {}`) or a
+  // destructured param (`{ url, body }`) — isn't mistaken for the body brace.
+  const parenStart = source.indexOf("(");
+  if (parenStart < 0) {
+    throw new Error(`analyser-seeds: could not find parameter list in ${sandboxPath}`);
+  }
+  let depth = 0;
+  let parenEnd = -1;
+  for (let i = parenStart; i < source.length; i++) {
+    if (source[i] === "(") depth++;
+    else if (source[i] === ")" && --depth === 0) { parenEnd = i; break; }
+  }
+  if (parenEnd < 0) {
+    throw new Error(`analyser-seeds: unbalanced parameter list in ${sandboxPath}`);
+  }
+  const openIdx = source.indexOf("{", parenEnd);
   const closeIdx = source.lastIndexOf("}");
   if (openIdx < 0 || closeIdx < 0 || closeIdx < openIdx) {
     throw new Error(`analyser-seeds: could not extract function body from ${sandboxPath}`);

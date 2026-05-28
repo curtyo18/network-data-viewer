@@ -37,4 +37,13 @@ describe("analyser-seeds plugin", () => {
       extractSandboxBody(path.join(FIXTURE_DIR, "arrow.sandbox.ts"))
     ).rejects.toThrow(/must be a function declaration/);
   });
+
+  it("extracts the body correctly when the signature contains a brace (default object param)", async () => {
+    const body = await extractSandboxBody(path.join(FIXTURE_DIR, "default-param.sandbox.ts"));
+    // The body — not the param default — must be what we captured.
+    expect(body).toContain('marker: "extracted-body"');
+    // The parameter default's contents must not leak into the extracted body.
+    expect(body).not.toContain("showRaw: false");
+    expect(body).not.toContain("function sandbox");
+  });
 });
