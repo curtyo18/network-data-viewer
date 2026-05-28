@@ -3,6 +3,8 @@ import { MSG } from "@/shared/messages";
 import type { AnalyserError } from "@/shared/types";
 export type { AnalyserError };
 
+const ERROR_POLL_INTERVAL_MS = 2000;
+
 export function useAnalyserErrors(): {
   errors: Record<string, AnalyserError[]>;
   refresh: () => Promise<void>;
@@ -18,7 +20,7 @@ export function useAnalyserErrors(): {
 
   useEffect(() => {
     void refresh();
-    const interval = setInterval(() => void refresh(), 2000);
+    const interval = setInterval(() => void refresh(), ERROR_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [refresh]);
 

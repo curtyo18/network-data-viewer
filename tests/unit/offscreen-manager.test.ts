@@ -1,16 +1,24 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { OffscreenManager } from "@/background/offscreen-manager";
+import { OffscreenManager, MANAGER_RUN_TIMEOUT_MS } from "@/background/offscreen-manager";
 import { MSG } from "@/shared/messages";
 import type { Settings } from "@/shared/settings";
 import { DEFAULT_SETTINGS } from "@/shared/settings";
 import type { SandboxInput } from "@/shared/types";
 
 const SETTINGS: Settings = { ...DEFAULT_SETTINGS };
-const DUMMY_INPUT: SandboxInput = { url: "https://x.com", method: "POST", body: null, dslOutput: null };
+const DUMMY_INPUT: SandboxInput = { url: "https://x.com", method: "POST", body: null, bodyEncoding: "text", dslOutput: null };
 
 function makeChromeStub() {
   const messageListeners = new Set<(msg: unknown, sender: unknown) => unknown>();
-  const sendMessage = vi.fn(async (_msg: unknown) => undefined);
+  // Mirror the offscreen document's responses: CREATE/DESTROY reply { ok: true };
+  // run-transform is resolved out-of-band via an OFFSCREEN_RESULT message.
+  const sendMessage = vi.fn(async (msg: unknown) => {
+    const type = (msg as { type?: string })?.type;
+    if (type === MSG.OFFSCREEN_CREATE_IFRAME || type === MSG.OFFSCREEN_DESTROY_IFRAME) {
+      return { ok: true };
+    }
+    return undefined;
+  });
   const createDocument = vi.fn(async () => undefined);
   const closeDocument = vi.fn(async () => undefined);
   const getContexts = vi.fn(async () => []);
@@ -33,16 +41,17 @@ function makeChromeStub() {
   } as unknown as typeof chrome;
 
   // Simulate the offscreen iframe replying to a run-transform message.
-  // Polls the mock call log until OFFSCREEN_RUN_TRANSFORM appears (it may not
-  // be recorded yet when this helper is called).
+  // Waits (condition-driven, not a fixed tick budget) until the
+  // OFFSCREEN_RUN_TRANSFORM message has been sent, then dispatches its result.
   async function reply(payload: unknown) {
-    // Flush enough microtask ticks for ensureDocument + sendMessage to settle.
-    for (let i = 0; i < 10; i++) await Promise.resolve();
-
-    const calls = sendMessage.mock.calls as Array<[{ type: string; requestId?: string }]>;
-    const call = calls.find((c) => c[0]?.type === MSG.OFFSCREEN_RUN_TRANSFORM);
-    if (!call) throw new Error("no OFFSCREEN_RUN_TRANSFORM message found yet");
-    const { requestId } = call[0] as { requestId: string };
+    const findRun = () => {
+      const calls = sendMessage.mock.calls as Array<[{ type: string; requestId?: string }]>;
+      return calls.find((c) => c[0]?.type === MSG.OFFSCREEN_RUN_TRANSFORM);
+    };
+    await vi.waitFor(() => {
+      if (!findRun()) throw new Error("no OFFSCREEN_RUN_TRANSFORM message yet");
+    });
+    const { requestId } = findRun()![0] as { requestId: string };
     for (const l of messageListeners) {
       l({ type: MSG.OFFSCREEN_RESULT, requestId, payload }, {});
     }
@@ -67,8 +76,8 @@ describe("OffscreenManager", () => {
 
       const resultPromise = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
 
-      // Advance past the 1000 ms timeout.
-      await vi.advanceTimersByTimeAsync(1000);
+      // Advance past the manager's run timeout.
+      await vi.advanceTimersByTimeAsync(MANAGER_RUN_TIMEOUT_MS);
 
       const result = await resultPromise;
       expect(result).toEqual({ error: "timeout" });
@@ -79,7 +88,7 @@ describe("OffscreenManager", () => {
       const manager = new OffscreenManager();
 
       const resultPromise = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
-      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(MANAGER_RUN_TIMEOUT_MS);
       await resultPromise;
 
       expect(sendMessage).toHaveBeenCalledWith(
@@ -94,7 +103,7 @@ describe("OffscreenManager", () => {
       const manager = new OffscreenManager();
 
       const resultPromise = manager.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
-      await vi.advanceTimersByTimeAsync(1000);
+      await vi.advanceTimersByTimeAsync(MANAGER_RUN_TIMEOUT_MS);
       await resultPromise;
 
       // closeDocumentIfOpen is async and called with void — let microtasks flush.
@@ -184,6 +193,28 @@ describe("OffscreenManager", () => {
       const om = new OffscreenManager();
       const result = await om.run("a", "code", DUMMY_INPUT, { showRaw: false });
       expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*Page failed to load/) });
+    });
+
+    it("surfaces an iframe-init failure and does NOT cache the analyser (retries CREATE on next run)", async () => {
+      const { sendMessage, reply } = makeChromeStub();
+      // First CREATE_IFRAME fails to init; the second succeeds.
+      sendMessage.mockImplementationOnce(async () => ({ ok: false, error: "SyntaxError: bad code" }));
+      const om = new OffscreenManager();
+
+      const first = await om.run("a1", "bad code", DUMMY_INPUT, SETTINGS);
+      expect(first).toEqual({ error: expect.stringMatching(/sandbox setup failed.*SyntaxError: bad code/) });
+
+      const createCount = () =>
+        (sendMessage.mock.calls as Array<[{ type: string }]>).filter(
+          (c) => c[0]?.type === MSG.OFFSCREEN_CREATE_IFRAME
+        ).length;
+      expect(createCount()).toBe(1);
+
+      // The failed analyser must not be cached as "known" — a retry re-sends CREATE.
+      const second = om.run("a1", "good code", DUMMY_INPUT, SETTINGS);
+      await reply({ result: 7 });
+      expect(await second).toEqual({ result: 7 });
+      expect(createCount()).toBe(2);
     });
   });
 });

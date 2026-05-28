@@ -71,7 +71,7 @@ describe("dispatch", () => {
     expect(sandbox).toHaveBeenCalledWith(
       c.id,
       c.sandboxCode,
-      { url: ev.url, method: ev.method, body: ev.reqBody, dslOutput: { a: 1 } },
+      { url: ev.url, method: ev.method, body: ev.reqBody, bodyEncoding: "text", dslOutput: { a: 1 } },
       customSettings,
     );
   });
@@ -84,7 +84,7 @@ describe("dispatch", () => {
     expect(sandbox).toHaveBeenCalledWith(
       c.id,
       c.sandboxCode,
-      { url: ev.url, method: "GET", body: null, dslOutput: null },
+      { url: ev.url, method: "GET", body: null, bodyEncoding: "text", dslOutput: null },
       SETTINGS,
     );
   });

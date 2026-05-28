@@ -34,13 +34,17 @@ describe("Storage.migrate", () => {
   });
 
   it("does nothing when storageVersion is already 2", async () => {
+    const keep = {
+      id: "user-created", name: "keep", enabled: true,
+      urlPattern: "example\\.com", dsl: [], createdAt: 0,
+    };
     const area = makeArea({
       [STORAGE_KEY_VERSION]: CURRENT_STORAGE_VERSION,
-      [STORAGE_KEY]: [{ id: "user-created", name: "keep" }],
+      [STORAGE_KEY]: [keep],
     });
     const storage = new Storage(area);
     await storage.migrate();
-    expect(await storage.getAnalysers()).toEqual([{ id: "user-created", name: "keep" }]);
+    expect(await storage.getAnalysers()).toEqual([keep]);
   });
 
   it("is idempotent (running twice from v1 leaves only v2 state)", async () => {

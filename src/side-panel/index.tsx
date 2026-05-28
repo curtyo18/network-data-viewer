@@ -99,7 +99,7 @@ function App() {
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, clearEvents, exportCopy, toggleShowRaw]);
+  }, [mode, clearEvents, exportCopy]);
 
   return (
     <div className="h-screen flex flex-col">

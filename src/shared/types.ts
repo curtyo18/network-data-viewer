@@ -43,12 +43,15 @@ export type AnalyserConfig = {
 
 // The argument shape every sandbox function receives as its first parameter.
 // `body` is the raw request body (null for body-less requests).
+// `bodyEncoding` tells the sandbox how `body` is encoded: "text" for UTF-8
+// strings, "base64" for binary bodies the capture layer base64-encoded.
 // `dslOutput` is the result of running the analyser's DSL chain over the body
 // (null when body is null or the DSL chain is empty).
 export type SandboxInput = {
   url: string;
   method: string;
   body: string | null;
+  bodyEncoding: "text" | "base64";
   dslOutput: unknown;
 };
 

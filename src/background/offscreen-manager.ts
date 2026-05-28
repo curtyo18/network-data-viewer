@@ -3,6 +3,12 @@ import { MSG } from "@/shared/messages";
 
 const OFFSCREEN_URL = "src/offscreen/offscreen.html";
 
+// Must exceed the offscreen document's own per-run timeout (RUN_TIMEOUT_MS in
+// offscreen.ts) plus slack, so the inner layer reports a real error/result
+// before this outer guard fires — otherwise slow-but-successful transforms
+// would be discarded and their iframe needlessly rebuilt.
+export const MANAGER_RUN_TIMEOUT_MS = 2500;
+
 type Pending = { resolve: (v: { result: unknown } | { error: string }) => void; timer: ReturnType<typeof setTimeout> };
 
 export class OffscreenManager {
@@ -39,7 +45,8 @@ export class OffscreenManager {
   private async ensureAnalyser(analyserId: string, code: string): Promise<void> {
     if (this.knownAnalysers.has(analyserId)) return;
     await this.ensureDocument();
-    await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_CREATE_IFRAME, analyserId, code });
+    const resp = await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_CREATE_IFRAME, analyserId, code });
+    if (!resp?.ok) throw new Error(resp?.error ?? "sandbox iframe init failed");
     this.knownAnalysers.add(analyserId);
   }
 
@@ -68,7 +75,7 @@ export class OffscreenManager {
         this.pending.delete(requestId);
         this.invalidate(analyserId);
         resolve({ error: "timeout" });
-      }, 1000);
+      }, MANAGER_RUN_TIMEOUT_MS);
       this.pending.set(requestId, { resolve, timer });
       chrome.runtime.sendMessage({
         type: MSG.OFFSCREEN_RUN_TRANSFORM,

@@ -12,4 +12,8 @@ describe("regex-extract", () => {
   it("returns null on no match", () => {
     expect(regexExtract("nope", "id=(\\d+)", 1)).toBe(null);
   });
+  it("refuses to run on inputs over the length cap (ReDoS guard)", () => {
+    const huge = "a".repeat(1_100_000);
+    expect(() => regexExtract(huge, "(a+)+$")).toThrow(/exceeds .* chars/);
+  });
 });

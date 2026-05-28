@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Storage } from "@/shared/storage";
+import { STORAGE_KEY } from "@/shared/messages";
 import { DEFAULT_SETTINGS } from "@/shared/settings";
 import type { AnalyserConfig } from "@/shared/types";
 
@@ -24,6 +25,21 @@ describe("Storage", () => {
     const s = new Storage(fakeStorage as unknown as chrome.storage.StorageArea);
     await s.setAnalysers([cfg]);
     expect(await s.getAnalysers()).toEqual([cfg]);
+  });
+
+  it("drops malformed stored entries and keeps valid ones (fail-closed read)", async () => {
+    const valid: AnalyserConfig = { id: "x", name: "n", enabled: true, urlPattern: "p", dsl: [], createdAt: 0 };
+    // Bypass setAnalysers (which only accepts typed configs) to simulate corrupt
+    // or legacy storage: a missing-fields entry and an entry with an unknown field.
+    await fakeStorage.set({ [STORAGE_KEY]: [valid, { id: "bad", name: "incomplete" }, { ...valid, id: "y", source: "reqBody" }] });
+    const s = new Storage(fakeStorage as unknown as chrome.storage.StorageArea);
+    expect(await s.getAnalysers()).toEqual([valid]);
+  });
+
+  it("returns [] when stored analysers value is not an array", async () => {
+    await fakeStorage.set({ [STORAGE_KEY]: { not: "an array" } });
+    const s = new Storage(fakeStorage as unknown as chrome.storage.StorageArea);
+    expect(await s.getAnalysers()).toEqual([]);
   });
 });
 

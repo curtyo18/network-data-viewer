@@ -1,6 +1,11 @@
 let cachedFn: ((input: unknown, settings: unknown) => unknown) | null = null;
 
 window.addEventListener("message", (ev: MessageEvent) => {
+  // Only accept messages from the embedding offscreen document. This sandbox is
+  // always loaded as a child iframe of the offscreen page, so any message from a
+  // window other than our parent (e.g. a page that embedded this resource) is
+  // rejected before we compile or run any code.
+  if (ev.source !== window.parent) return;
   const msg = ev.data;
   if (!msg || typeof msg !== "object") return;
 

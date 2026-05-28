@@ -27,9 +27,10 @@ export default defineManifest({
     }
   ],
   sandbox: { pages: ["src/sandbox/sandbox.html"] },
-  web_accessible_resources: [
-    { resources: ["src/sandbox/sandbox.html"], matches: ["<all_urls>"] }
-  ],
+  // No web_accessible_resources: the sandbox page is loaded only by our own
+  // offscreen document via chrome.runtime.getURL(), which does not require the
+  // resource to be web-accessible. Exposing it to <all_urls> would let any page
+  // embed it, so we keep it private.
   icons: { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
   action: {
     default_title: "Network Data Viewer",

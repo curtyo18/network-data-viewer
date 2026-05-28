@@ -50,6 +50,7 @@ export async function dispatch(
       url: event.url,
       method: event.method,
       body: event.reqBody,
+      bodyEncoding: event.reqBodyEncoding ?? "text",
       dslOutput,
     };
 

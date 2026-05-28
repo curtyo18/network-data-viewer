@@ -22,8 +22,11 @@ jobs:
       - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test
+      # Build before tests so the build-output suite (which asserts the runtime
+      # HTML entrypoints are bundled) runs against a fresh dist/ instead of
+      # silently skipping.
       - run: npm run build
+      - run: npm test
 
   e2e:
     runs-on: ubuntu-latest
