@@ -20,8 +20,14 @@ const RULES: Rule[] = [
   ruleEmptyDslOnNonStringSource,
   rulePluckLooksLikeJsonpath,
   ruleRegexBacktracking,
+  ruleRegexExtractBacktracking,
   ruleSandboxReferencesGlobals,
 ];
+
+// Heuristic: nested quantifiers on overlapping groups, e.g. (a+)+, (a*)*, (a+)*.
+function looksLikeBacktracking(pattern: string): boolean {
+  return /\([^)]*[+*][^)]*\)[+*]/.test(pattern);
+}
 
 // ------ Individual rules ------
 
@@ -32,7 +38,7 @@ function ruleEmptyDslOnNonStringSource(cfg: AnalyserConfig): LintIssue | null {
   // properties on `input` (input.foo / input["foo"]).
   if (cfg.dsl.length > 0) return null;
   if (!cfg.sandboxCode) return null;
-  const looksObjectAccess = /input\s*[.[]/.test(cfg.sandboxCode);
+  const looksObjectAccess = /\binput\s*[.[]/.test(cfg.sandboxCode);
   if (!looksObjectAccess) return null;
   return {
     rule: RULE_EMPTY_DSL,
@@ -57,12 +63,27 @@ function rulePluckLooksLikeJsonpath(cfg: AnalyserConfig): LintIssue | null {
 
 const RULE_REGEX_BACKTRACKING = "regex-likely-backtracking";
 function ruleRegexBacktracking(cfg: AnalyserConfig): LintIssue | null {
-  // Heuristic: detect nested quantifiers on overlapping groups, e.g. (a+)+, (a*)*, (a+)*.
-  if (/\([^)]*[+*][^)]*\)[+*]/.test(cfg.urlPattern)) {
+  if (looksLikeBacktracking(cfg.urlPattern)) {
     return {
       rule: RULE_REGEX_BACKTRACKING,
       message: `urlPattern contains nested quantifiers like (x+)+ — this can cause catastrophic backtracking on long inputs. Refactor or anchor the pattern.`,
     };
+  }
+  return null;
+}
+
+const RULE_REGEX_EXTRACT_BACKTRACKING = "regex-extract-likely-backtracking";
+function ruleRegexExtractBacktracking(cfg: AnalyserConfig): LintIssue | null {
+  // regex-extract patterns are the one place a user regex actually runs against
+  // captured bodies, so they need the same backtracking check as urlPattern.
+  for (const step of cfg.dsl) {
+    if (step.op !== "regex-extract") continue;
+    if (looksLikeBacktracking(step.pattern)) {
+      return {
+        rule: RULE_REGEX_EXTRACT_BACKTRACKING,
+        message: `regex-extract pattern "${step.pattern}" contains nested quantifiers like (x+)+ — this can cause catastrophic backtracking on long captured bodies. Refactor the pattern.`,
+      };
+    }
   }
   return null;
 }

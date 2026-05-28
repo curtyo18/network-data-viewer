@@ -30,6 +30,12 @@ describe("lint rule: empty-dsl-on-typed-source", () => {
     expect(issues.some(i => i.rule === "empty-dsl-on-typed-source")).toBe(false);
   });
 
+  it("does not fire on an identifier that merely ends in 'input' (word boundary)", () => {
+    const cfg: AnalyserConfig = { ...BASE, dsl: [], sandboxCode: "return myinput.value;" };
+    const issues = lintAnalyser(cfg);
+    expect(issues.some(i => i.rule === "empty-dsl-on-typed-source")).toBe(false);
+  });
+
   it("does not fire when dsl is empty and there is no sandbox code", () => {
     const cfg: AnalyserConfig = { ...BASE, dsl: [] };
     const issues = lintAnalyser(cfg);
@@ -94,6 +100,28 @@ describe("lint rule: regex-likely-backtracking", () => {
     const cfg: AnalyserConfig = { ...BASE, urlPattern: "example\\.com\\/api" };
     const issues = lintAnalyser(cfg);
     expect(issues.some(i => i.rule === "regex-likely-backtracking")).toBe(false);
+  });
+});
+
+describe("lint rule: regex-extract-likely-backtracking", () => {
+  it("fires when a regex-extract step pattern has nested quantifiers", () => {
+    const cfg: AnalyserConfig = { ...BASE, dsl: [{ op: "regex-extract", pattern: "(a+)+$" }] };
+    const issues = lintAnalyser(cfg);
+    const issue = issues.find(i => i.rule === "regex-extract-likely-backtracking");
+    expect(issue).toBeDefined();
+    expect(issue?.message).toContain("(a+)+$");
+  });
+
+  it("does not fire on a safe regex-extract pattern", () => {
+    const cfg: AnalyserConfig = { ...BASE, dsl: [{ op: "regex-extract", pattern: "id=(\\d+)" }] };
+    const issues = lintAnalyser(cfg);
+    expect(issues.some(i => i.rule === "regex-extract-likely-backtracking")).toBe(false);
+  });
+
+  it("does not fire when there are no regex-extract steps", () => {
+    const cfg: AnalyserConfig = { ...BASE, dsl: [{ op: "json-parse" }] };
+    const issues = lintAnalyser(cfg);
+    expect(issues.some(i => i.rule === "regex-extract-likely-backtracking")).toBe(false);
   });
 });
 
