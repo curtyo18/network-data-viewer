@@ -1,5 +1,10 @@
 import { useState } from "react";
 
+// Objects/arrays at a depth below this start expanded; deeper nodes start
+// collapsed. 2 means the first two layers (the root and its direct children)
+// are open by default.
+const DEFAULT_OPEN_DEPTH = 2;
+
 type Props = { value: unknown; depth?: number; rootKey?: string };
 
 export function JsonTree({ value, depth = 0, rootKey }: Props) {
@@ -13,7 +18,7 @@ export function JsonTree({ value, depth = 0, rootKey }: Props) {
 }
 
 function ObjectNode({ obj, depth, rootKey }: { obj: Record<string, unknown>; depth: number; rootKey?: string }) {
-  const [open, setOpen] = useState(depth < 1);
+  const [open, setOpen] = useState(depth < DEFAULT_OPEN_DEPTH);
   const pad = { paddingLeft: `${depth * 12}px` };
   const entries = Object.entries(obj);
   return (
@@ -35,7 +40,7 @@ function ObjectNode({ obj, depth, rootKey }: { obj: Record<string, unknown>; dep
 }
 
 function ArrayNode({ arr, depth, rootKey }: { arr: unknown[]; depth: number; rootKey?: string }) {
-  const [open, setOpen] = useState(depth < 1);
+  const [open, setOpen] = useState(depth < DEFAULT_OPEN_DEPTH);
   const pad = { paddingLeft: `${depth * 12}px` };
   return (
     <div>
