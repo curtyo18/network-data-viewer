@@ -9,6 +9,14 @@ const OFFSCREEN_URL = "src/offscreen/offscreen.html";
 // would be discarded and their iframe needlessly rebuilt.
 export const MANAGER_RUN_TIMEOUT_MS = 2500;
 
+// How long to wait for the offscreen document to post OFFSCREEN_READY after we
+// create it. createDocument resolves when the page is created, but the
+// document's scripts may not yet have registered their message listener; the
+// readiness ping closes that race. If it never arrives, we surface a clear
+// error rather than letting the next sendMessage reject with "Receiving end
+// does not exist".
+export const READY_TIMEOUT_MS = 2000;
+
 type Pending = { resolve: (v: { result: unknown } | { error: string }) => void; timer: ReturnType<typeof setTimeout> };
 
 export class OffscreenManager {
@@ -34,12 +42,39 @@ export class OffscreenManager {
     const contexts = await chrome.runtime.getContexts({ contextTypes: [chrome.runtime.ContextType.OFFSCREEN_DOCUMENT] });
     if (contexts.length > 0) return;
     if (this.creating) return this.creating;
-    this.creating = chrome.offscreen.createDocument({
-      url: OFFSCREEN_URL,
-      reasons: [chrome.offscreen.Reason.DOM_PARSER],
-      justification: "host sandboxed iframes for user transform code"
-    }).finally(() => { this.creating = null; });
+    this.creating = this.createAndAwaitReady().finally(() => { this.creating = null; });
     return this.creating;
+  }
+
+  private createAndAwaitReady(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const onReady = (msg: { type?: string } | null | undefined) => {
+        if (msg?.type !== MSG.OFFSCREEN_READY) return false;
+        settle();
+        return false;
+      };
+      const settle = (err?: Error): void => {
+        if (settled) return;
+        settled = true;
+        chrome.runtime.onMessage.removeListener(onReady);
+        clearTimeout(timer);
+        if (err) reject(err); else resolve();
+      };
+      const timer = setTimeout(
+        () => settle(new Error("offscreen document did not signal ready in time")),
+        READY_TIMEOUT_MS,
+      );
+      // Listener must be registered before createDocument is called: the doc
+      // could finish loading and emit OFFSCREEN_READY before this Promise
+      // executor returns, and we'd miss it.
+      chrome.runtime.onMessage.addListener(onReady);
+      chrome.offscreen.createDocument({
+        url: OFFSCREEN_URL,
+        reasons: [chrome.offscreen.Reason.DOM_PARSER],
+        justification: "host sandboxed iframes for user transform code"
+      }).catch(e => settle(e instanceof Error ? e : new Error(String(e))));
+    });
   }
 
   private async ensureAnalyser(analyserId: string, code: string): Promise<void> {

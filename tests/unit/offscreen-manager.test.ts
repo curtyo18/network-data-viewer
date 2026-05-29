@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { OffscreenManager, MANAGER_RUN_TIMEOUT_MS } from "@/background/offscreen-manager";
+import { OffscreenManager, MANAGER_RUN_TIMEOUT_MS, READY_TIMEOUT_MS } from "@/background/offscreen-manager";
 import { MSG } from "@/shared/messages";
 import type { Settings } from "@/shared/settings";
 import { DEFAULT_SETTINGS } from "@/shared/settings";
@@ -19,7 +19,16 @@ function makeChromeStub() {
     }
     return undefined;
   });
-  const createDocument = vi.fn(async () => undefined);
+  // The real offscreen.ts sends OFFSCREEN_READY right after its module-level
+  // listener is registered. ensureDocument relies on that ping to know the
+  // document is safe to message; reflect that in the stub so tests exercise
+  // the happy path of the readiness handshake.
+  function fireReady(): void {
+    queueMicrotask(() => {
+      for (const l of messageListeners) l({ type: MSG.OFFSCREEN_READY }, {});
+    });
+  }
+  const createDocument = vi.fn(async () => { fireReady(); });
   const closeDocument = vi.fn(async () => undefined);
   const getContexts = vi.fn(async () => []);
 
@@ -193,6 +202,24 @@ describe("OffscreenManager", () => {
       const om = new OffscreenManager();
       const result = await om.run("a", "code", DUMMY_INPUT, { showRaw: false });
       expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*Page failed to load/) });
+    });
+
+    it("surfaces a clear error when the offscreen document never signals ready", async () => {
+      const stub = makeChromeStub();
+      // Resolve createDocument but skip the readiness ping the real offscreen
+      // page would emit — this simulates the race that caused the
+      // "Receiving end does not exist" sendMessage rejections in v0.4.1.
+      stub.createDocument.mockImplementationOnce(async () => undefined);
+      vi.useFakeTimers();
+      try {
+        const om = new OffscreenManager();
+        const resultPromise = om.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
+        await vi.advanceTimersByTimeAsync(READY_TIMEOUT_MS);
+        const result = await resultPromise;
+        expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*did not signal ready/) });
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it("surfaces an iframe-init failure and does NOT cache the analyser (retries CREATE on next run)", async () => {
