@@ -109,3 +109,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   return false;
 });
+
+// Signal that this offscreen document is fully loaded and its message listener
+// is registered. The service worker's ensureDocument awaits this ping before
+// allowing any CREATE_IFRAME sends, so a captured event arriving in the small
+// window between createDocument resolving and our scripts evaluating can't
+// trigger a "Receiving end does not exist" sendMessage rejection.
+chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_READY }).catch(() => { /* no listener yet — ensureDocument's timeout will retry */ });
