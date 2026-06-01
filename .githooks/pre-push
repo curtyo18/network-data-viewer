@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Fast pre-push gate: typecheck + unit tests. No browser / no e2e.
+#
+# Rationale: `npm test` (vitest) does NOT include the Playwright e2e suite,
+# which is a separate CI job. This hook gives quick local feedback on the
+# cheap checks before a push. The e2e suite stays on CI and can be run
+# locally with `npm run test:e2e:local` (after `npm run e2e:setup`).
+#
+# Enabled automatically via the `prepare` script in package.json
+# (git config core.hooksPath .githooks). To skip a one-off push: git push --no-verify
+#
+set -euo pipefail
+
+echo "[pre-push] typecheck…"
+npm run typecheck
+
+echo "[pre-push] unit tests…"
+npm test
+
+echo "[pre-push] ok"
