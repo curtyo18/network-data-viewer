@@ -63,7 +63,7 @@ export async function setupHarness(opts?: { seed?: unknown }): Promise<LaunchedH
   panel.on("console", (msg) => console.log("[panel]", msg.text()));
   panel.on("pageerror", (err) => console.log("[panel error]", err.message));
   await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-  await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
+  await expect(panel.getByRole("button", { name: "Config" })).toBeVisible({ timeout: 5000 });
   await waitForPanelPortReady(panel);
 
   const page = await ctx.newPage();

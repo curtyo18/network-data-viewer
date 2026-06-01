@@ -159,7 +159,8 @@ test("settings showRaw toggle is reflected in sandbox analyser output", async ()
     await page.click("#fire-fetch");
     await expect(panel.locator("text=filtered-output").first()).toBeVisible({ timeout: 15000 });
 
-    // Toggle "show raw" in the panel header
+    // Toggle "show raw" — it now lives in the Config popover, so open it first
+    await panel.getByRole("button", { name: "Config" }).click();
     await panel.getByLabel("show raw").click();
     // Wait for chrome.storage.onChanged to propagate to the SW's settings cache
     await panel.waitForTimeout(300);
@@ -226,7 +227,7 @@ test("panel-not-open: results are buffered and replayed when the panel connects"
     panel.on("console", (msg) => console.log("[panel]", msg.text()));
     panel.on("pageerror", (err) => console.log("[panel error]", err.message));
     await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
-    await expect(panel.getByRole("button", { name: "Export all" })).toBeVisible({ timeout: 5000 });
+    await expect(panel.getByRole("button", { name: "Config" })).toBeVisible({ timeout: 5000 });
     await waitForPanelPortReady(panel);
 
     await expect(panel.locator("text=GA4").first()).toBeVisible({ timeout: 5000 });
