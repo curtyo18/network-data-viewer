@@ -57,4 +57,34 @@ describe("ConfigMenu", () => {
     expect(screen.queryByText("Import")).not.toBeInTheDocument(); // closed
     unmount();
   });
+
+  it("clicking outside closes the menu", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Config" }));
+    expect(screen.getByText("Import")).toBeInTheDocument();
+    await user.click(document.body);
+    await waitFor(() => expect(screen.queryByText("Import")).not.toBeInTheDocument());
+    unmount();
+  });
+
+  it("pressing Escape closes the menu", async () => {
+    const user = userEvent.setup();
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Config" }));
+    expect(screen.getByText("Import")).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByText("Import")).not.toBeInTheDocument());
+    unmount();
+  });
+
+  it("Export all keeps the menu open", async () => {
+    const user = userEvent.setup();
+    chromeMock.setStored("analyserConfigs", []);
+    const { unmount } = setup();
+    await user.click(screen.getByRole("button", { name: "Config" }));
+    await user.click(screen.getByText("Export all"));
+    expect(screen.getByText("Import")).toBeInTheDocument(); // still open
+    unmount();
+  });
 });
