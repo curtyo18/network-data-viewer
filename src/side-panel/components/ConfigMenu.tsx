@@ -38,7 +38,6 @@ export function ConfigMenu({
         className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200"
         onClick={() => setOpen(o => !o)}
         aria-label="Config"
-        aria-haspopup="menu"
         aria-expanded={open}
         title="Config"
       >
@@ -46,7 +45,6 @@ export function ConfigMenu({
       </button>
       {open && (
         <div
-          role="menu"
           className="absolute right-0 mt-1 z-20 flex flex-col gap-1 p-1 bg-slate-800 border border-slate-700 rounded shadow-lg"
         >
           <label className="flex items-center gap-1 px-2 py-1 text-xs rounded text-slate-200 cursor-pointer hover:bg-slate-700">
