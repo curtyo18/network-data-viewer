@@ -10,6 +10,7 @@ export function EventList({ events, filter, onEditAnalyser }: { events: MatchRes
     getScrollElement: () => parentRef.current,
     estimateSize: () => 100,        // average row height; rows expand on click
     overscan: 8,
+    getItemKey: (index) => `${events[index].event.id}-${events[index].analyserId}`,
   });
 
   if (events.length === 0) {

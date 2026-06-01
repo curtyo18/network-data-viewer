@@ -8,7 +8,7 @@ import { EventList } from "./components/EventList";
 import { AnalyserManager } from "./components/AnalyserManager";
 import { ConfigEditor } from "./components/ConfigEditor";
 import { ImportDialog } from "./components/ImportDialog";
-import { ExportButton } from "./components/ExportButton";
+import { ConfigMenu } from "./components/ConfigMenu";
 import type { AnalyserConfig } from "@/shared/types";
 import { DEFAULT_SETTINGS, STORAGE_KEY_SETTINGS, mergeSettings, type Settings } from "@/shared/settings";
 
@@ -109,10 +109,6 @@ function App() {
           <button className={`px-2 py-1 text-xs rounded ${mode.kind === "manage" ? "bg-violet-700 text-white" : "bg-slate-800 text-slate-200"}`} onClick={() => setMode({ kind: "manage" })}>analysers</button>
         </div>
         <div className="flex gap-2">
-          <label className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-800 rounded text-slate-200 cursor-pointer">
-            <input type="checkbox" checked={settings.showRaw} onChange={toggleShowRaw} />
-            show raw
-          </label>
           {mode.kind === "events" && events.length > 0 && (
             <button
               className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200"
@@ -123,8 +119,11 @@ function App() {
               Clear
             </button>
           )}
-          <button className="px-2 py-1 text-xs bg-slate-800 rounded text-slate-200" onClick={() => setMode({ kind: "import" })}>Import</button>
-          <ExportButton />
+          <ConfigMenu
+            showRaw={settings.showRaw}
+            onToggleShowRaw={toggleShowRaw}
+            onImport={() => setMode({ kind: "import" })}
+          />
         </div>
       </header>
       {mode.kind === "events" && events.length > 0 && (
