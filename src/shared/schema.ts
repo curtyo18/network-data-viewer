@@ -36,6 +36,7 @@ export const AnalyserConfigSchema = z.object({
   name: z.string(),
   enabled: z.boolean(),
   urlPattern: z.string(),
+  source: z.enum(["reqBody", "url", "resBody"]).optional(),
   dsl: z.array(DslStepSchema),
   sandboxCode: z.string().optional(),
   seedVersion: z.number().int().nonnegative().optional(),

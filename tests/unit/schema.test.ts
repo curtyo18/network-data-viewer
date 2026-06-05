@@ -129,13 +129,19 @@ describe("AnalyserConfigSchema seedVersion", () => {
   });
 });
 
-describe("AnalyserConfigSchema strictness", () => {
-  it("rejects objects containing the dropped `source` field", () => {
-    const result = AnalyserConfigSchema.safeParse({
-      id: "x", name: "x", enabled: true, urlPattern: ".*",
-      source: "reqBody",
-      dsl: [], createdAt: 0,
-    });
+describe("AnalyserConfigSchema source", () => {
+  it("accepts a config with no source (defaults to reqBody at dispatch)", () => {
+    const result = AnalyserConfigSchema.safeParse({ ...baseConfig });
+    expect(result.success).toBe(true);
+  });
+
+  it.each(["reqBody", "url", "resBody"])("accepts source: %s", (source) => {
+    const result = AnalyserConfigSchema.safeParse({ ...baseConfig, source });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an unknown source value", () => {
+    const result = AnalyserConfigSchema.safeParse({ ...baseConfig, source: "resHeaders" });
     expect(result.success).toBe(false);
   });
 });

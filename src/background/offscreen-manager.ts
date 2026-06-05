@@ -19,6 +19,13 @@ export const READY_TIMEOUT_MS = 2000;
 
 type Pending = { resolve: (v: { result: unknown } | { error: string }) => void; timer: ReturnType<typeof setTimeout> };
 
+// Chrome rejects sendMessage with this when no context is listening — here it
+// means the offscreen document closed underneath us, which is recoverable.
+function isReceivingEndGone(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /Receiving end does not exist|Could not establish connection/i.test(msg);
+}
+
 export class OffscreenManager {
   private pending = new Map<string, Pending>();
   private knownAnalysers = new Set<string>();
@@ -80,7 +87,19 @@ export class OffscreenManager {
   private async ensureAnalyser(analyserId: string, code: string): Promise<void> {
     if (this.knownAnalysers.has(analyserId)) return;
     await this.ensureDocument();
-    const resp = await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_CREATE_IFRAME, analyserId, code });
+    let resp: { ok?: boolean; error?: string } | undefined;
+    try {
+      resp = await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_CREATE_IFRAME, analyserId, code });
+    } catch (e) {
+      // "Receiving end does not exist": the offscreen document was torn down
+      // between ensureDocument's readiness check and this send — almost always
+      // a concurrent invalidate() closing it mid-flight, or a getContexts view
+      // that lagged a teardown. Force a clean rebuild and retry exactly once.
+      if (!isReceivingEndGone(e)) throw e;
+      await this.closeDocumentIfOpen();
+      await this.ensureDocument();
+      resp = await chrome.runtime.sendMessage({ type: MSG.OFFSCREEN_CREATE_IFRAME, analyserId, code });
+    }
     if (!resp?.ok) throw new Error(resp?.error ?? "sandbox iframe init failed");
     this.knownAnalysers.add(analyserId);
   }

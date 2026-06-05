@@ -222,6 +222,54 @@ describe("OffscreenManager", () => {
       }
     });
 
+    it("recovers when CREATE rejects with 'Receiving end does not exist' (document torn down mid-send)", async () => {
+      const { sendMessage, createDocument, reply } = makeChromeStub();
+      let creates = 0;
+      sendMessage.mockImplementation(async (msg: unknown) => {
+        const type = (msg as { type?: string })?.type;
+        if (type === MSG.OFFSCREEN_CREATE_IFRAME) {
+          creates++;
+          // First attempt: the offscreen doc vanished underneath us.
+          if (creates === 1) throw new Error("Could not establish connection. Receiving end does not exist.");
+          return { ok: true };
+        }
+        if (type === MSG.OFFSCREEN_DESTROY_IFRAME) return { ok: true };
+        return undefined;
+      });
+      const om = new OffscreenManager();
+
+      const run = om.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
+      await reply({ result: 9 });
+      expect(await run).toEqual({ result: 9 });
+
+      // CREATE was retried once and the document rebuilt.
+      expect(creates).toBe(2);
+      expect(createDocument).toHaveBeenCalledTimes(2);
+    });
+
+    it("does NOT retry on an unrelated CREATE rejection — surfaces the error and rebuilds nothing", async () => {
+      const { sendMessage, createDocument } = makeChromeStub();
+      let creates = 0;
+      sendMessage.mockImplementation(async (msg: unknown) => {
+        const type = (msg as { type?: string })?.type;
+        if (type === MSG.OFFSCREEN_CREATE_IFRAME) {
+          creates++;
+          // A non-recoverable failure (not the "Receiving end" race) must propagate
+          // unchanged — no rebuild, no second attempt that could mask it.
+          throw new Error("boom");
+        }
+        if (type === MSG.OFFSCREEN_DESTROY_IFRAME) return { ok: true };
+        return undefined;
+      });
+      const om = new OffscreenManager();
+
+      const result = await om.run("a1", "return 1;", DUMMY_INPUT, SETTINGS);
+      expect(result).toEqual({ error: expect.stringMatching(/sandbox setup failed.*boom/) });
+      // CREATE attempted exactly once; the document was created once and never rebuilt.
+      expect(creates).toBe(1);
+      expect(createDocument).toHaveBeenCalledTimes(1);
+    });
+
     it("surfaces an iframe-init failure and does NOT cache the analyser (retries CREATE on next run)", async () => {
       const { sendMessage, reply } = makeChromeStub();
       // First CREATE_IFRAME fails to init; the second succeeds.

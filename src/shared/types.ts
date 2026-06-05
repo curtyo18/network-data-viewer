@@ -30,11 +30,18 @@ export type DslStep =
 
 export type DslOpName = DslStep["op"];
 
+// Which part of the captured event the DSL chain runs against. Defaults to
+// "reqBody" when absent so configs written before this field stay valid. Use
+// "url" for query-string endpoints (e.g. GET search calls where the data
+// lives in the URL and there is no request body).
+export type DslSource = "reqBody" | "url" | "resBody";
+
 export type AnalyserConfig = {
   id: string;
   name: string;
   enabled: boolean;
   urlPattern: string;
+  source?: DslSource;
   dsl: DslStep[];
   sandboxCode?: string;
   seedVersion?: number;
