@@ -31,7 +31,7 @@ describe("Storage", () => {
     const valid: AnalyserConfig = { id: "x", name: "n", enabled: true, urlPattern: "p", dsl: [], createdAt: 0 };
     // Bypass setAnalysers (which only accepts typed configs) to simulate corrupt
     // or legacy storage: a missing-fields entry and an entry with an unknown field.
-    await fakeStorage.set({ [STORAGE_KEY]: [valid, { id: "bad", name: "incomplete" }, { ...valid, id: "y", source: "reqBody" }] });
+    await fakeStorage.set({ [STORAGE_KEY]: [valid, { id: "bad", name: "incomplete" }, { ...valid, id: "y", bogusField: "nope" }] });
     const s = new Storage(fakeStorage as unknown as chrome.storage.StorageArea);
     expect(await s.getAnalysers()).toEqual([valid]);
   });

@@ -42,6 +42,41 @@ test("captures fetch to GA4 and renders in side panel", async () => {
   }
 });
 
+test("source:'url' analyser parses the query string of a body-less GET", async () => {
+  // Regression guard for the search bug: a GET has no request body, so a DSL
+  // chain bound to the default reqBody source yields null. With source:'url' the
+  // query-parse step runs against the URL and the live row matches the preview.
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-url-source",
+      name: "SearchUrl",
+      enabled: true,
+      urlPattern: "product-discovery/search",
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]
+  });
+  try {
+    await ctx.route(/test-fixture\.local/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    // Registered after the catch-all so it takes precedence for the search path.
+    await ctx.route(/product-discovery\/search/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
+    });
+
+    await page.goto("https://test-fixture.local/");
+    await page.click("#fire-get");
+
+    await expect(panel.locator("text=SearchUrl").first()).toBeVisible({ timeout: 10000 });
+    // The query param value only appears if the DSL parsed the URL, not the (null) body.
+    await expect(panel.locator("text=E2EUSERID").first()).toBeVisible();
+  } finally {
+    await ctx.close();
+  }
+});
+
 test("sandbox path: analyser with sandboxCode produces a row via the offscreen iframe", async () => {
   // Regression guard: when src/offscreen/offscreen.html wasn't bundled, chrome.offscreen.createDocument
   // failed silently and any analyser with sandboxCode produced no output. This exercises that path.

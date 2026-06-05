@@ -89,6 +89,38 @@ describe("dispatch", () => {
     );
   });
 
+  it("runs DSL chain on the URL when source is 'url' (body-less GET)", async () => {
+    // Repro of the search bug: GET request, data lives in the query string,
+    // reqBody is null. With source:'url' the DSL parses the URL instead of the body.
+    const c = cfg({
+      source: "url",
+      dsl: [{ op: "query-parse" }],
+      urlPattern: "search",
+    });
+    const ev = makeEvent({
+      method: "GET",
+      reqBody: null,
+      url: "https://api.example.com/api/search/aab?num_results_Products=6&userId=ABC",
+    });
+    const res = await dispatch(ev, compileConfigs([c]), SETTINGS, noSandbox);
+    expect(res).toHaveLength(1);
+    expect(res[0].dslOutput).toEqual({ num_results_Products: "6", userId: "ABC" });
+    expect(res[0].error).toBeUndefined();
+  });
+
+  it("runs DSL chain on the response body when source is 'resBody'", async () => {
+    const c = cfg({ source: "resBody", dsl: [{ op: "json-parse" }] });
+    const ev = makeEvent({ reqBody: null, resBody: '{"ok":true}' });
+    const res = await dispatch(ev, compileConfigs([c]), SETTINGS, noSandbox);
+    expect(res[0].dslOutput).toEqual({ ok: true });
+    expect(res[0].error).toBeUndefined();
+  });
+
+  it("defaults to reqBody when source is absent", async () => {
+    const res = await dispatch(makeEvent(), compileConfigs([cfg({})]), SETTINGS, noSandbox);
+    expect(res[0].dslOutput).toEqual({ a: 1 });
+  });
+
   it("runs DSL chain on empty-string body without crashing", async () => {
     const sandbox = vi.fn(async () => ({ result: "ok" }));
     const c = cfg({ sandboxCode: "return ...;", dsl: [{ op: "to-string" }] });

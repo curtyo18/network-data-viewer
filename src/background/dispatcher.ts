@@ -36,11 +36,18 @@ export async function dispatch(
     if (re === null || !re.test(event.url)) continue;
 
     const t0 = performance.now();
+    // The DSL chain runs against the configured source (default reqBody). For
+    // "url" the input is always present, so query-string analysers work on
+    // body-less GETs that would otherwise yield a null dslOutput.
+    const dslInput =
+      cfg.source === "url" ? event.url :
+      cfg.source === "resBody" ? event.resBody :
+      event.reqBody;
     let dslOutput: unknown = null;
     let dslErr: string | undefined;
-    if (event.reqBody !== null && cfg.dsl.length > 0) {
+    if (dslInput !== null && cfg.dsl.length > 0) {
       try {
-        dslOutput = await runDsl(cfg.dsl, event.reqBody);
+        dslOutput = await runDsl(cfg.dsl, dslInput);
       } catch (e) {
         dslErr = (e as Error).message;
       }
