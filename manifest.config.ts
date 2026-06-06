@@ -1,9 +1,17 @@
 import { defineManifest } from "@crxjs/vite-plugin";
+import { readFileSync } from "node:fs";
+
+// Single source of version truth: `npm version` bumps package.json (+lockfile),
+// and the build reads it from here. Keeps the manifest, the zip filename, and
+// the npm version from ever drifting apart.
+const { version } = JSON.parse(
+  readFileSync(new URL("./package.json", import.meta.url), "utf-8"),
+) as { version: string };
 
 export default defineManifest({
   manifest_version: 3,
   name: "Network Data Viewer",
-  version: "0.5.2",
+  version,
   minimum_chrome_version: "116",
   description: "Configurable network-data capture and analysis.",
   permissions: ["storage", "sidePanel", "offscreen"],
