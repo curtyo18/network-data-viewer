@@ -1,0 +1,54 @@
+name: Release
+
+# Fires when a vX.Y.Z tag is pushed. Builds, packages, and publishes the
+# GitHub release with the extension zip attached — so the artifact can never be
+# forgotten the way a manual `gh release create` can.
+on:
+  push:
+    tags: ['v*']
+
+# Least privilege: the job needs write only to create the release and upload assets.
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      # Node 20 ships npm 10.x; the .npmrc relies on min-release-age (npm 11.10+).
+      - run: npm install -g npm@latest
+      - run: npm ci
+      # Fail fast if the tag and the source version disagree — catches a tag
+      # pushed without bumping package.json (or vice versa).
+      - name: Check tag matches package.json version
+        run: |
+          ver="v$(node -p "require('./package.json').version")"
+          if [ "$ver" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json ($ver)"
+            exit 1
+          fi
+      # Builds then zips. npm run package aborts if dist/manifest.json's version
+      # != package.json, so a stale build can never be published.
+      - run: npm run package
+      - name: Publish release with the packaged extension
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          # Idempotent: attach (replacing) the zip if the release already exists
+          # — e.g. a re-run — otherwise create it with auto-generated notes.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" network-data-viewer-*.zip --clobber
+          else
+            gh release create "$tag" network-data-viewer-*.zip \
+              --title "$tag" --generate-notes
+          fi
