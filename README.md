@@ -105,4 +105,4 @@ Full design in `specs/2026-05-25-dataviewer-design.md`. That document is living 
 
 ## License
 
-TBD — license will be added before public flip.
+[MIT](./LICENSE) © 2026 Curt
