@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chromeMock, renderComponent } from "./test-utils";
-import { AnalyserManager } from "@/side-panel/components/AnalyserManager";
+import { AnalyserManager } from "@/entrypoints/sidepanel/components/AnalyserManager";
 import { decodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
 

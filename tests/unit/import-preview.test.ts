@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPreview } from "@/side-panel/lib/import-preview";
+import { buildPreview } from "@/entrypoints/sidepanel/lib/import-preview";
 import type { AnalyserConfig } from "@/shared/types";
 
 function makeAnalyser(overrides: Partial<AnalyserConfig> & { id: string; name: string }): AnalyserConfig {

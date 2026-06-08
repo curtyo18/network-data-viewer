@@ -90,7 +90,7 @@ describe("dispatch", () => {
   });
 
   it("runs DSL chain on the URL when source is 'url' (body-less GET)", async () => {
-    // Repro of the search bug: GET request, data lives in the query string,
+    // Repro of body-less GET handling: GET request, data lives in the query string,
     // reqBody is null. With source:'url' the DSL parses the URL instead of the body.
     const c = cfg({
       source: "url",

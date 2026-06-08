@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { decodeConfig } from "@/shared/share";
-import { useAnalysers } from "@/side-panel/lib/use-analysers";
-import { buildPreview } from "@/side-panel/lib/import-preview";
-import type { DecodedPreview } from "@/side-panel/lib/import-preview";
+import { useAnalysers } from "@/entrypoints/sidepanel/lib/use-analysers";
+import { buildPreview } from "@/entrypoints/sidepanel/lib/import-preview";
+import type { DecodedPreview } from "@/entrypoints/sidepanel/lib/import-preview";
 import type { AnalyserConfig } from "@/shared/types";
 
 type State =

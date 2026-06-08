@@ -1,4 +1,4 @@
-import { useExport } from "@/side-panel/lib/use-export";
+import { useExport } from "@/entrypoints/sidepanel/lib/use-export";
 
 export function ExportButton() {
   const { copy, copied } = useExport();

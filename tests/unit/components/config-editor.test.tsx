@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chromeMock, renderComponent } from "./test-utils";
-import { ConfigEditor } from "@/side-panel/components/ConfigEditor";
+import { ConfigEditor } from "@/entrypoints/sidepanel/components/ConfigEditor";
 import type { AnalyserConfig } from "@/shared/types";
 
 const BASE: AnalyserConfig = {

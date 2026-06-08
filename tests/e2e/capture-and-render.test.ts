@@ -43,15 +43,15 @@ test("captures fetch to GA4 and renders in side panel", async () => {
 });
 
 test("source:'url' analyser parses the query string of a body-less GET", async () => {
-  // Regression guard for the search bug: a GET has no request body, so a DSL
+  // Regression guard for body-less GETs: a GET has no request body, so a DSL
   // chain bound to the default reqBody source yields null. With source:'url' the
   // query-parse step runs against the URL and the live row matches the preview.
   const { ctx, panel, page } = await setupHarness({
     seed: [{
       id: "test-url-source",
-      name: "SearchUrl",
+      name: "UrlQuery",
       enabled: true,
-      urlPattern: "product-discovery/search",
+      urlPattern: "api/search",
       source: "url",
       dsl: [{ op: "query-parse" }],
       createdAt: 0
@@ -62,14 +62,14 @@ test("source:'url' analyser parses the query string of a body-less GET", async (
       await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
     });
     // Registered after the catch-all so it takes precedence for the search path.
-    await ctx.route(/product-discovery\/search/, async (route) => {
+    await ctx.route(/api\/search/, async (route) => {
       await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
     });
 
     await page.goto("https://test-fixture.local/");
     await page.click("#fire-get");
 
-    await expect(panel.locator("text=SearchUrl").first()).toBeVisible({ timeout: 10000 });
+    await expect(panel.locator("text=UrlQuery").first()).toBeVisible({ timeout: 10000 });
     // The query param value only appears if the DSL parsed the URL, not the (null) body.
     await expect(panel.locator("text=E2EUSERID").first()).toBeVisible();
   } finally {
@@ -261,7 +261,7 @@ test("panel-not-open: results are buffered and replayed when the panel connects"
     const panel = await ctx.newPage();
     panel.on("console", (msg) => console.log("[panel]", msg.text()));
     panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-    await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
+    await panel.goto(`chrome-extension://${extId}/sidepanel.html`);
     await expect(panel.getByRole("button", { name: "Config" })).toBeVisible({ timeout: 5000 });
     await waitForPanelPortReady(panel);
 

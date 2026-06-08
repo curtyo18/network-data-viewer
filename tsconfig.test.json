@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": { "types": ["chrome", "vite/client", "node", "@testing-library/jest-dom"] },
-  "include": ["tests"]
+  "include": ["tests", ".wxt/wxt.d.ts"]
 }

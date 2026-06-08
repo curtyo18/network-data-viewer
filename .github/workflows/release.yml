@@ -22,9 +22,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
-      # Node 20 ships npm 10.x; the .npmrc relies on min-release-age (npm 11.10+).
+      # Node 22 ships npm 10.x; the .npmrc relies on min-release-age (npm 11.10+).
       - run: npm install -g npm@latest
       - run: npm ci
       # Fail fast if the tag and the source version disagree — catches a tag
@@ -36,19 +36,15 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match package.json ($ver)"
             exit 1
           fi
-      # Builds then zips. npm run package aborts if dist/manifest.json's version
-      # != package.json, so a stale build can never be published.
-      - run: npm run package
+      - run: npm run zip
       - name: Publish release with the packaged extension
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="$GITHUB_REF_NAME"
-          # Idempotent: attach (replacing) the zip if the release already exists
-          # — e.g. a re-run — otherwise create it with auto-generated notes.
+          zip=$(ls .output/*-chrome.zip | head -n1)
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" network-data-viewer-*.zip --clobber
+            gh release upload "$tag" "$zip" --clobber
           else
-            gh release create "$tag" network-data-viewer-*.zip \
-              --title "$tag" --generate-notes
+            gh release create "$tag" "$zip" --title "$tag" --generate-notes
           fi

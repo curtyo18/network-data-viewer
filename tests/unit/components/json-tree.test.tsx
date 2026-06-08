@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
 import { renderComponent } from "./test-utils";
-import { JsonTree } from "@/side-panel/components/JsonTree";
+import { JsonTree } from "@/entrypoints/sidepanel/components/JsonTree";
 
 describe("JsonTree default expansion", () => {
   it("auto-expands the first two layers and collapses deeper ones", () => {

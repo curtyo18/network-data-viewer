@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chromeMock, renderComponent } from "./test-utils";
-import { ImportDialog } from "@/side-panel/components/ImportDialog";
+import { ImportDialog } from "@/entrypoints/sidepanel/components/ImportDialog";
 import { encodeConfig } from "@/shared/share";
 import type { AnalyserConfig } from "@/shared/types";
 

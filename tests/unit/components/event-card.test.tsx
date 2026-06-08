@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chromeMock, renderComponent } from "./test-utils";
-import { EventCard } from "@/side-panel/components/EventCard";
+import { EventCard } from "@/entrypoints/sidepanel/components/EventCard";
 import type { MatchResult } from "@/shared/types";
 
 const BASE_RESULT: MatchResult = {

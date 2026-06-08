@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { chromeMock, renderComponent } from "./test-utils";
-import { ConfigMenu } from "@/side-panel/components/ConfigMenu";
+import { ConfigMenu } from "@/entrypoints/sidepanel/components/ConfigMenu";
 
 beforeEach(() => {
   chromeMock.reset();

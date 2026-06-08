@@ -1,15 +1,16 @@
-import { Storage } from "./storage";
-import { dispatch, compileConfigs, type CompiledConfig } from "./dispatcher";
-import { OffscreenManager } from "./offscreen-manager";
-import { mergeSeeds } from "./merge-seeds";
-import { AnalyserErrorStore } from "./analyser-errors";
-import { ResultBuffer } from "./result-buffer";
+import { Storage } from "@/background/storage";
+import { dispatch, compileConfigs, type CompiledConfig } from "@/background/dispatcher";
+import { OffscreenManager } from "@/background/offscreen-manager";
+import { mergeSeeds } from "@/background/merge-seeds";
+import { AnalyserErrorStore } from "@/background/analyser-errors";
+import { ResultBuffer } from "@/background/result-buffer";
 import { CapturedEventSchema } from "@/shared/schema";
 import { STORAGE_KEY, MSG, PORT_NAME } from "@/shared/messages";
 import { STORAGE_KEY_SETTINGS, type Settings } from "@/shared/settings";
 import type { AnalyserConfig, CapturedEvent, MatchResult } from "@/shared/types";
 import seeds from "virtual:analyser-seeds";
 
+export default defineBackground(() => {
 const storage = new Storage(chrome.storage.local);
 const offscreen = new OffscreenManager();
 const panelPorts = new Set<chrome.runtime.Port>();
@@ -103,4 +104,5 @@ chrome.runtime.onInstalled.addListener(async ({ reason }) => {
   } catch (e) {
     console.error("[seeds] migration failed; bundled seeds may not be up to date", e);
   }
+});
 });

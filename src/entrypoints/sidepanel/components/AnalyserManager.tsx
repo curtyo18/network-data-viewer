@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { AnalyserConfig } from "@/shared/types";
-import { useAnalysers } from "@/side-panel/lib/use-analysers";
-import { useAnalyserErrors } from "@/side-panel/lib/use-analyser-errors";
-import { useExport } from "@/side-panel/lib/use-export";
+import { useAnalysers } from "@/entrypoints/sidepanel/lib/use-analysers";
+import { useAnalyserErrors } from "@/entrypoints/sidepanel/lib/use-analyser-errors";
+import { useExport } from "@/entrypoints/sidepanel/lib/use-export";
 
 export function AnalyserManager({ onEdit }: { onEdit: (cfg: AnalyserConfig | null) => void }) {
   const { analysers, toggle, remove } = useAnalysers();

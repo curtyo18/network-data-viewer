@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export async function launchWithExtension(): Promise<BrowserContext> {
-  const ext = path.resolve(__dirname, "../../dist");
+  const ext = path.resolve(__dirname, "../../.output/chrome-mv3");
   const ctx = await chromium.launchPersistentContext("", {
     headless: false,
     args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`, "--no-sandbox"]
@@ -62,7 +62,7 @@ export async function setupHarness(opts?: { seed?: unknown }): Promise<LaunchedH
   const panel = await ctx.newPage();
   panel.on("console", (msg) => console.log("[panel]", msg.text()));
   panel.on("pageerror", (err) => console.log("[panel error]", err.message));
-  await panel.goto(`chrome-extension://${extId}/src/side-panel/index.html`);
+  await panel.goto(`chrome-extension://${extId}/sidepanel.html`);
   await expect(panel.getByRole("button", { name: "Config" })).toBeVisible({ timeout: 5000 });
   await waitForPanelPortReady(panel);
 

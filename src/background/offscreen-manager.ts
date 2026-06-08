@@ -1,7 +1,7 @@
 import type { SandboxRunner } from "./dispatcher";
 import { MSG } from "@/shared/messages";
 
-const OFFSCREEN_URL = "src/offscreen/offscreen.html";
+const OFFSCREEN_URL = "offscreen.html";
 
 // Must exceed the offscreen document's own per-run timeout (RUN_TIMEOUT_MS in
 // offscreen.ts) plus slack, so the inner layer reports a real error/result

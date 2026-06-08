@@ -5,7 +5,8 @@ research/
 
 # build + dependency artefacts
 node_modules/
-dist/
+.output/
+.wxt/
 *.zip
 
 # tooling

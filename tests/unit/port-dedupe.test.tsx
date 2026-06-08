@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import { useEventStream } from "@/side-panel/lib/port";
+import { useEventStream } from "@/entrypoints/sidepanel/lib/port";
 import { MSG } from "@/shared/messages";
 import type { MatchResult } from "@/shared/types";
 

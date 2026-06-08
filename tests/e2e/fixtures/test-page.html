@@ -10,8 +10,8 @@
         fetch("https://www.google-analytics.com/g/collect?v=2&tid=G-TEST&cid=abc&dl=https%3A%2F%2Fexample.com&en=page_view", { method: "POST", body: "ep.page_title=Test" });
       });
       document.getElementById("fire-get").addEventListener("click", () => {
-        // Body-less GET with data in the query string — mirrors a product search call.
-        fetch("https://test-fixture.local/api/product-discovery/search/aab?num_results_Products=6&userId=E2EUSERID");
+        // Body-less GET with data in the query string — mirrors a search/query call.
+        fetch("https://test-fixture.local/api/search/aab?num_results_Products=6&userId=E2EUSERID");
       });
       document.getElementById("fire-xhr").addEventListener("click", () => {
         const x = new XMLHttpRequest();

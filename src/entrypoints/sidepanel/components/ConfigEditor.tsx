@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { AnalyserConfig, DslStep } from "@/shared/types";
 import { AnalyserConfigSchema } from "@/shared/schema";
-import { useAnalysers } from "@/side-panel/lib/use-analysers";
+import { useAnalysers } from "@/entrypoints/sidepanel/lib/use-analysers";
 import { runDslWithSteps, type PreviewRow } from "@/shared/dsl/preview";
 import { lintAnalyser, type LintIssue } from "@/shared/dsl/lint";
 

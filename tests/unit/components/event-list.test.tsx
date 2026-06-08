@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { chromeMock, renderComponent } from "./test-utils";
-import { EventList } from "@/side-panel/components/EventList";
+import { EventList } from "@/entrypoints/sidepanel/components/EventList";
 import type { MatchResult } from "@/shared/types";
 
 // happy-dom has no layout engine, so @tanstack/react-virtual returns 0 virtual

@@ -10,7 +10,7 @@ function ensureIframe(analyserId: string, code: string): Promise<void> {
   if (ready.has(analyserId)) return ready.get(analyserId)!;
   const p = new Promise<void>((resolve, reject) => {
     const iframe = document.createElement("iframe");
-    iframe.src = chrome.runtime.getURL("src/sandbox/sandbox.html");
+    iframe.src = chrome.runtime.getURL("/sandbox.html");
     iframe.style.display = "none";
     iframe.onload = () => {
       let cleaned = false;
