@@ -36,15 +36,30 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match package.json ($ver)"
             exit 1
           fi
+      # wxt zip builds + produces the flat .output/<name>-<version>-chrome.zip
+      # (the Chrome Web Store upload format — manifest.json at the archive root).
       - run: npm run zip
-      - name: Publish release with the packaged extension
+      # Also fold the build into a folder named after the repo, so users can
+      # download, extract, and "Load unpacked" the resulting <repo>/ directory.
+      - name: Package as a repo-named folder (unpacked-install zip)
+        run: |
+          name="${GITHUB_REPOSITORY##*/}"
+          ver="$(node -p "require('./package.json').version")"
+          mkdir -p .output/pack
+          rm -rf ".output/pack/$name"
+          cp -r .output/chrome-mv3 ".output/pack/$name"
+          ( cd .output/pack && zip -r "$GITHUB_WORKSPACE/${name}-${ver}.zip" "$name" )
+      - name: Publish release with both artifacts
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           tag="$GITHUB_REF_NAME"
-          zip=$(ls .output/*-chrome.zip | head -n1)
+          name="${GITHUB_REPOSITORY##*/}"
+          ver="$(node -p "require('./package.json').version")"
+          store=$(ls .output/*-chrome.zip | head -n1)
+          # Idempotent: replace assets if the release already exists (e.g. a re-run).
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$zip" --clobber
+            gh release upload "$tag" "${name}-${ver}.zip" "$store" --clobber
           else
-            gh release create "$tag" "$zip" --title "$tag" --generate-notes
+            gh release create "$tag" "${name}-${ver}.zip" "$store" --title "$tag" --generate-notes
           fi
