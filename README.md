@@ -67,7 +67,7 @@ The extension requests:
 
 The extension is **read-only**: it observes, never modifies or blocks requests. No data is sent anywhere — everything stays local to your browser.
 
-See `docs/permissions-justification.md` for the per-permission Web Store narrative and `docs/privacy.html` for the privacy policy.
+See `docs/privacy.html` for the privacy policy and `docs/store/listing.md` for the full Chrome Web Store submission pack (dashboard copy and permission justifications).
 
 ## Development
 
