@@ -67,13 +67,14 @@ Richer alternative (104 chars):
 >
 > Open source — code and privacy policy linked below.
 
-## Screenshots — TODO (manual, ≥1 required; 1280×800 or 640×400)
+## Screenshots (≥1 required; 1280×800 or 640×400)
 
-**None exist yet.** Capture the live side panel decoding a recognisable beacon
-(e.g. a GA4 hit) — this both satisfies the requirement and demonstrates the single
-purpose. `docs/screenshot-mock.html` is a dev artifact that pulls Tailwind from a
-CDN; render it only as a labelled placeholder fallback, never as a live capture.
-Scrub any real URLs / payloads before committing.
+- **Present:** `docs/screenshot.png` (640×400, 24-bit, no alpha) — the side panel
+  decoding a live GA4 beacon on a retail page. Submittable as-is. The captured
+  session's `userId` value is blurred; no brand/logo is identifiable in frame.
+- **Recommended extras** (scrub real URLs / payloads first): the analyser-config
+  editor; a second decoded vendor beacon. Match 640×400 so all screenshots share
+  one dimension.
 
 Store icon 128×128 is already present (`public/icons/icon128.png`).
 Note: manifest sets `minimum_chrome_version: 116` — listing will reflect that.
@@ -154,7 +155,7 @@ submitting.)*
 - [x] MV3 package built at current version (0.5.4) — `.output/network-data-viewer-0.5.4-chrome.zip`
 - [x] Privacy policy hosted — Pages enabled (confirm renders in browser)
 - [x] 128×128 icon present
-- [ ] ≥1 screenshot (manual — none exist; capture the side panel)
+- [x] ≥1 screenshot (`docs/screenshot.png`, 640×400, userId blurred) — optional extras recommended
 - [ ] CWS developer account + $5 fee + 2-Step Verification + verified contact email (user)
 - [ ] Category / language / visibility set in dashboard
 - [ ] Paste summary, detailed description, single-purpose, permission

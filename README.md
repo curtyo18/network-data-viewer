@@ -2,6 +2,8 @@
 
 Chrome extension that captures JS-initiated network traffic in real time and runs configurable analysers over it. Each analyser is a URL pattern, an optional transform chain, and an optional bit of sandboxed JavaScript. Results stream into a side panel as the page makes requests. Analyser configs are shareable as compressed strings.
 
+![Network Data Viewer decoding a live GA4 beacon in the side panel](docs/screenshot.png)
+
 ## What it's for
 
 - Reverse-engineering the payloads of tracking, analytics, and observability vendors firing from a page
