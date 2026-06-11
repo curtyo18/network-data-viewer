@@ -2,6 +2,8 @@
 
 Copy-paste source for the CWS Developer Dashboard. The item is published — keep this in sync with the live listing.
 
+**Live listing:** <https://chromewebstore.google.com/detail/network-data-viewer/ennlgmclipcalejpblgbfodeekgeedge>
+
 > ⚠️ **Data-use answer is deliberately NOT "does not collect."** Because this tool
 > captures network traffic that can contain authentication tokens / PII, CWS
 > counts that as handling sensitive data **even though it never leaves the
