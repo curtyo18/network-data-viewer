@@ -10,6 +10,15 @@ export default defineConfig({
     name: 'Network Data Viewer',
     description: 'Configurable network-data capture and analysis.',
     minimum_chrome_version: '116',
+    // Chrome's DEFAULT sandbox CSP leaves connect-src unrestricted, so sandboxed
+    // analyser code could fetch() captured data off-device — the privacy policy
+    // and store listing promise "no network" from the sandbox. default-src 'none'
+    // closes connect/img/frame egress; the bare `sandbox allow-scripts` token
+    // drops the default allow-forms/allow-popups (form-action / window.open exfil).
+    content_security_policy: {
+      sandbox:
+        "sandbox allow-scripts; script-src 'self' 'unsafe-inline' 'unsafe-eval'; default-src 'none'",
+    },
     permissions: ['storage', 'sidePanel', 'offscreen'],
     host_permissions: ['<all_urls>'],
     icons: {

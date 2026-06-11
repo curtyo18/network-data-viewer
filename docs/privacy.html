@@ -62,7 +62,7 @@
 <body>
   <div class="page">
     <h1>Network Data Viewer</h1>
-    <p class="subtitle">Privacy Policy &mdash; Last updated 2026-05-26</p>
+    <p class="subtitle">Privacy Policy &mdash; Last updated 2026-06-11</p>
 
     <p>
       Network Data Viewer does <strong>not</strong> collect, transmit, or store any user data
@@ -117,9 +117,10 @@
       Chrome Sync for extension data in your browser settings.
     </p>
     <p>
-      Captured network events are held only in the side panel's in-memory state for the
-      duration of the browser session. They are never written to disk and disappear when the
-      panel or the browser is closed.
+      Captured network events are held only in memory — in the side panel's event list and
+      in a small replay buffer (the most recent 100 results) inside the extension's
+      service worker. They are never written to disk and disappear when the panel closes
+      and the service worker shuts down.
     </p>
 
     <h2>Permissions</h2>
