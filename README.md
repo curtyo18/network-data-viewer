@@ -14,7 +14,7 @@ Not a replacement for the browser's Network panel — it's complementary. The Ne
 
 ## Install
 
-Install from the Chrome Web Store (search "Network Data Viewer"), or load a release build unpacked — download the latest `network-data-viewer-X.Y.Z.zip` from [Releases](../../releases), unzip, then in Chrome:
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/network-data-viewer/ennlgmclipcalejpblgbfodeekgeedge), or load a release build unpacked — download the latest `network-data-viewer-X.Y.Z.zip` from [Releases](../../releases), unzip, then in Chrome:
 
 1. Visit `chrome://extensions`
 2. Enable Developer Mode (top right)
