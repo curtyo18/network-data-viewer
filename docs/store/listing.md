@@ -1,6 +1,6 @@
 # Network Data Viewer — Chrome Web Store Listing Pack
 
-Copy-paste source for the CWS Developer Dashboard. Draft — review before publishing.
+Copy-paste source for the CWS Developer Dashboard. The item is published — keep this in sync with the live listing.
 
 > ⚠️ **Data-use answer is deliberately NOT "does not collect."** Because this tool
 > captures network traffic that can contain authentication tokens / PII, CWS
@@ -152,7 +152,7 @@ submitting.)*
 
 ## Submission checklist (NDV)
 
-- [x] MV3 package built at current version (0.5.4) — `.output/network-data-viewer-0.5.4-chrome.zip`
+- [x] MV3 package built at current version (0.5.5) — `.output/network-data-viewer-0.5.5-chrome.zip`
 - [x] Privacy policy hosted — Pages enabled (confirm renders in browser)
 - [x] 128×128 icon present
 - [x] ≥1 screenshot (`docs/screenshot.png`, 640×400, userId blurred) — optional extras recommended
@@ -162,4 +162,4 @@ submitting.)*
       justifications, reviewer notes
 - [ ] Data-use: **declare auth-info + website-content, certify Limited Use** (NOT "does not collect")
 - [ ] Upload zip + screenshots + icon → Submit
-- [ ] Do NOT upload the legacy zip (`network-data-viewer-0.5.3-chrome.zip`)
+- [ ] Do NOT upload older-version zips (anything below the current version)

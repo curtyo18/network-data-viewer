@@ -36,6 +36,18 @@ describe(".output/chrome-mv3 contains all runtime HTML entry points", () => {
     expect(manifest.sandbox?.pages).toContain("sandbox.html");
     expect(manifest.web_accessible_resources).toBeUndefined();
   });
+
+  // The privacy policy and store listing promise sandbox code has no network
+  // access. Chrome's default sandbox CSP does NOT restrict connect-src, so the
+  // manifest must pin a CSP that does; this guards against it being dropped.
+  it.skipIf(!existsSync(OUT))("sandbox CSP blocks network egress", () => {
+    const manifest = JSON.parse(readFileSync(resolve(OUT, "manifest.json"), "utf8"));
+    const csp: string = manifest.content_security_policy?.sandbox ?? "";
+    expect(csp).toContain("default-src 'none'");
+    expect(csp).toMatch(/sandbox allow-scripts[;\s]/);
+    expect(csp).not.toContain("allow-popups");
+    expect(csp).not.toContain("allow-forms");
+  });
 });
 
 // Requires `unzip` on the host (available on Linux CI runners).

@@ -14,7 +14,7 @@ Not a replacement for the browser's Network panel — it's complementary. The Ne
 
 ## Install
 
-Until the extension is published to the Chrome Web Store — download the latest `network-data-viewer-vX.Y.Z.zip` from [Releases](../../releases), unzip, then in Chrome:
+Install from the Chrome Web Store (search "Network Data Viewer"), or load a release build unpacked — download the latest `network-data-viewer-X.Y.Z.zip` from [Releases](../../releases), unzip, then in Chrome:
 
 1. Visit `chrome://extensions`
 2. Enable Developer Mode (top right)
@@ -41,7 +41,7 @@ Export the current analyser configs as a single compressed string starting with 
 
 ### Storage
 
-Analyser configs persist via `chrome.storage.local`. Captured events do NOT persist — the event list is session-scoped and clears when you close the browser.
+Analyser configs persist via `chrome.storage.local`. Captured events do NOT persist — they exist only in memory (the panel's event list, plus a 100-event replay buffer in the service worker) and are never written to disk. The list clears when the panel closes; the replay buffer dies with the service worker.
 
 ## Settings
 

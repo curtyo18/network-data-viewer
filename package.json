@@ -1,8 +1,13 @@
 {
   "name": "network-data-viewer",
-  "version": "0.5.4",
+  "version": "0.5.5",
+  "private": true,
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=11.10.0"
+  },
   "scripts": {
     "icons": "node scripts/generate-icons.mjs",
     "dev": "wxt",
