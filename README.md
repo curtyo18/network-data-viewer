@@ -33,7 +33,7 @@ An analyser is a small config:
 - **DSL chain** — an ordered list of small transform steps (`json-parse`, `decode-base64`, `gunzip`, `query-parse`, `pluck`, `regex-extract`, `jsonpath`, ...). The chain operates on the request body; each step's output becomes the next step's input.
 - **Sandbox code** (optional) — a small JS function body that receives `{url, method, body, dslOutput}` (the request plus the DSL chain's output) and returns whatever you want rendered. Sandboxed by Chrome — no `chrome.*` APIs, no cookies, no network.
 
-Three analysers ship by default: GA4, ContentSquare, Celebrus.
+Four analysers ship by default: GA4, ContentSquare, Celebrus, Meta.
 
 ### Sharing
 
