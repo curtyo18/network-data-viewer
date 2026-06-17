@@ -51,7 +51,7 @@ Richer alternative (104 chars):
 >
 > **Built for analytics / tag debugging.** Write URL-pattern matchers and
 > transform chains (or small sandboxed code snippets) to pull apart beacons from
-> GA4, ContentSquare, Celebrus, and anything else, into readable fields.
+> GA4, ContentSquare, Celebrus, Meta, and anything else, into readable fields.
 >
 > **Everything is local.**
 > • Captured traffic is processed entirely on your device and shown in the side
