@@ -12,7 +12,7 @@ export const meta: AnalyserMeta = {
   // Conversions API call to `graph.facebook.com/v<n>/<pixelId>/events`.
   // See research/meta-wire-format.md §1.4.
   urlPattern:
-    "^https?://(?:[^/?#]+/tr/?\\?(?=[^#]*\\bid=)(?=[^#]*\\bev=)|graph\\.facebook\\.com/v\\d+(?:\\.\\d+)?/\\d+/events(?:[?#]|$))",
+    "^https?://(?:[^/?#]+/tr/?\\?(?=[^#]*\\bid=)(?=[^#]*\\bev=)|graph\\.facebook\\.com/v\\d+(?:\\.\\d+)?/\\d+/events/?(?:[?#]|$))",
   dsl: [],
   seedVersion: 1,
   createdAt: 1737000000000,

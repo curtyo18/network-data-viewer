@@ -67,4 +67,47 @@ describe("meta sandbox", () => {
     const result = sandbox(wrap(url, "not json"), { showRaw: false });
     expect(result).toBeNull();
   });
+
+  it("does not let custom cd[]/ud[] data clobber the canonical id/ev fields", () => {
+    const url = "https://www.facebook.com/tr/?id=REAL&ev=Purchase&cd[id]=FAKE&cd[ev]=FAKE_EV";
+    const result = sandbox(wrap(url), { showRaw: false }) as Record<string, unknown>;
+    expect(result.id).toBe("REAL");
+    expect(result.ev).toBe("Purchase");
+  });
+
+  it("does not let a wire param named transport clobber the pixel label", () => {
+    const url = "https://www.facebook.com/tr/?id=1&ev=X&transport=spoofed&cd[transport]=spoofed2";
+    const result = sandbox(wrap(url), { showRaw: false }) as Record<string, unknown>;
+    expect(result.transport).toBe("pixel");
+  });
+
+  it("keeps capi labels and the top-level access_token authoritative over wire fields", () => {
+    const url = "https://graph.facebook.com/v18.0/123/events";
+    const body = JSON.stringify({
+      data: [{ event_name: "X", transport: "spoofed", eventIndex: 999, access_token: "EVENT_TOKEN" }],
+      access_token: "TOP_TOKEN",
+    });
+    const result = sandbox(wrap(url, body), { showRaw: false }) as { fanOut: Array<Record<string, unknown>> };
+    expect(result.fanOut[0].transport).toBe("capi");
+    expect(result.fanOut[0].eventIndex).toBe(0);
+    expect(result.fanOut[0].access_token).toBe("TOP_TOKEN");
+  });
+
+  it("treats a graph URL inside a /tr param as a pixel hit, not a CAPI call", () => {
+    // The CAPI detector is scheme-anchored, so an unencoded graph URL appearing in
+    // a param value must NOT divert the pixel beacon into the JSON branch.
+    const url = "https://www.facebook.com/tr/?id=123&ev=PageView&dl=graph.facebook.com/v1/1/events";
+    const result = sandbox(wrap(url), { showRaw: false }) as Record<string, unknown>;
+    expect(result.transport).toBe("pixel");
+    expect(result.id).toBe("123");
+  });
+
+  it("surfaces a non-object CAPI data item under value instead of a phantom row", () => {
+    const url = "https://graph.facebook.com/v18.0/123/events";
+    const body = JSON.stringify({ data: [42], access_token: "T" });
+    const result = sandbox(wrap(url, body), { showRaw: false }) as { fanOut: Array<Record<string, unknown>> };
+    expect(result.fanOut).toHaveLength(1);
+    expect(result.fanOut[0].value).toBe(42);
+    expect(result.fanOut[0].transport).toBe("capi");
+  });
 });
