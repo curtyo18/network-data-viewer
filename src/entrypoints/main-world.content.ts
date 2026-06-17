@@ -181,6 +181,42 @@ export default defineContentScript({
         }
       }
       (window as { WebSocket: typeof WebSocket }).WebSocket = PatchedWS as unknown as typeof WebSocket;
+
+      // --- Image beacons ---
+      // Tracking pixels (Meta's fbevents.js, Google Ads conversion pixels,
+      // Pinterest, …) fire GET beacons by assigning to an Image's `src` rather
+      // than via fetch/XHR/sendBeacon, so they bypass the patches above. Hook the
+      // prototype `src` setter to see the URL. There is no readable response
+      // (cross-origin, no-cors) and no request body for a GET — the payload is in
+      // the URL. Only http(s) URLs are emitted (skips data:/blob:/empty resets);
+      // ordinary <img> content is harmless noise that no analyser pattern matches.
+      const imgDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");
+      if (imgDesc && typeof imgDesc.set === "function") {
+        const origSrcSet = imgDesc.set;
+        Object.defineProperty(HTMLImageElement.prototype, "src", {
+          ...imgDesc,
+          set(this: HTMLImageElement, value: string) {
+            try {
+              const url = new URL(String(value), document.baseURI).href;
+              if (/^https?:/i.test(url)) {
+                send({
+                  id: crypto.randomUUID(),
+                  ts: Date.now(),
+                  source: "image",
+                  method: "GET",
+                  url,
+                  reqHeaders: {},
+                  reqBody: null,
+                  resStatus: null,
+                  resHeaders: {},
+                  resBody: null,
+                });
+              }
+            } catch { /* relative/invalid/empty src — never throw into the page */ }
+            origSrcSet.call(this, value);
+          },
+        });
+      }
     })();
   },
 });

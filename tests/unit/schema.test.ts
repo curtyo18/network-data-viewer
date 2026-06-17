@@ -43,6 +43,10 @@ describe("CapturedEventSchema", () => {
   it("rejects reqBodyEncoding: \"invalid\"", () => {
     expect(() => CapturedEventSchema.parse({ ...baseEvent, reqBodyEncoding: "invalid" })).toThrow();
   });
+
+  it("accepts source: \"image\" (tracking-pixel beacons)", () => {
+    expect(() => CapturedEventSchema.parse({ ...baseEvent, source: "image" })).not.toThrow();
+  });
 });
 
 describe("AnalyserConfigSchema", () => {

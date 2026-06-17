@@ -5,6 +5,7 @@
     <button id="fire-xhr">fire xhr</button>
     <button id="fire-beacon">fire beacon</button>
     <button id="fire-get">fire get</button>
+    <button id="fire-image">fire image</button>
     <script>
       document.getElementById("fire-fetch").addEventListener("click", () => {
         fetch("https://www.google-analytics.com/g/collect?v=2&tid=G-TEST&cid=abc&dl=https%3A%2F%2Fexample.com&en=page_view", { method: "POST", body: "ep.page_title=Test" });
@@ -23,6 +24,12 @@
           "https://www.google-analytics.com/g/collect?v=2&tid=G-BEACON&cid=beacon&dl=https%3A%2F%2Fexample.com&en=page_view",
           "ep.page_title=BeaconTest"
         );
+      });
+      document.getElementById("fire-image").addEventListener("click", () => {
+        // Tracking-pixel transport: a GET fired by assigning to Image.src —
+        // mirrors how Meta's fbevents.js sends its PageView beacon.
+        const img = new Image();
+        img.src = "https://www.google-analytics.com/g/collect?v=2&tid=G-IMAGE&cid=img&dl=https%3A%2F%2Fexample.com&en=page_view";
       });
     </script>
   </body>

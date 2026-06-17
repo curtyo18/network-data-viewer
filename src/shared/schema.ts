@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const CaptureSourceSchema = z.enum(["fetch", "xhr", "beacon", "ws-send", "ws-recv"]);
+const CaptureSourceSchema = z.enum(["fetch", "xhr", "beacon", "image", "ws-send", "ws-recv"]);
 
 export const CapturedEventSchema = z.object({
   id: z.string(),
