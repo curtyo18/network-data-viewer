@@ -35,14 +35,14 @@ Richer alternative (104 chars):
 ## Single-purpose description (required, Privacy tab — separate field)
 
 > Network Data Viewer captures the JS-initiated network traffic of the page you
-> are on (fetch, XMLHttpRequest, sendBeacon, WebSocket), runs your configured
-> local analysers over it, and shows the decoded results in Chrome's side panel —
-> entirely on-device. Local network-traffic capture and analysis is its single
-> purpose.
+> are on (fetch, XMLHttpRequest, sendBeacon, WebSocket, and image-pixel beacons),
+> runs your configured local analysers over it, and shows the decoded results in
+> Chrome's side panel — entirely on-device. Local network-traffic capture and
+> analysis is its single purpose.
 
 ## Detailed description (max 16,000 chars)
 
-> **See and decode what a page is sending — without leaving the browser.**
+> **See and decode what a page is sending — without leaving the browser. Comes pre-packaged with analysers for GA4, ContentSquare, Celebrus and Meta.**
 >
 > Network Data Viewer captures the network requests a page makes in JavaScript —
 > `fetch`, `XMLHttpRequest`, `sendBeacon`, and `WebSocket` — and runs your own
@@ -67,7 +67,7 @@ Richer alternative (104 chars):
 > fetches. This keeps it lightweight and avoids the "started debugging this
 > browser" banner.
 >
-> Open source — code and privacy policy linked below.
+> Open source — <https://github.com/curtyo18/network-data-viewer>
 
 ## Screenshots (≥1 required; 1280×800 or 640×400)
 
@@ -113,8 +113,9 @@ submitting.)*
 
 **Host permissions — `<all_urls>`** *(the one needing the most care)*
 > A content script is injected at document_start to monkey-patch fetch,
-> XMLHttpRequest, sendBeacon, and WebSocket in the page's MAIN world — the only
-> world where patching affects the code the page runs. Broad host access is
+> XMLHttpRequest, sendBeacon, WebSocket, and the HTMLImageElement `src` setter
+> (tracking-pixel beacons) in the page's MAIN world — the only world where
+> patching affects the code the page runs. Broad host access is
 > required because the tool must work on whatever page the user is analysing;
 > a fixed domain list would defeat its purpose. It is strictly read-only: it never
 > modifies, redirects, or blocks requests, and never transmits captured data — all
