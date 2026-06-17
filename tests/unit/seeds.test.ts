@@ -11,10 +11,10 @@ describe("seed analysers", () => {
     expect(() => AnalyserConfigArraySchema.parse(seeds)).not.toThrow();
   });
 
-  it("includes the three bundled analysers", async () => {
+  it("includes the four bundled analysers", async () => {
     const seeds = await buildAllSeeds(EXAMPLES_DIR);
     const names = seeds.map(s => s.name).sort();
-    expect(names).toEqual(["Celebrus", "ContentSquare", "GA4"]);
+    expect(names).toEqual(["Celebrus", "ContentSquare", "GA4", "Meta"]);
   });
 
   it("no seed carries the dropped `source` field", async () => {
