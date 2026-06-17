@@ -1,4 +1,4 @@
-export type CaptureSource = "fetch" | "xhr" | "beacon" | "ws-send" | "ws-recv";
+export type CaptureSource = "fetch" | "xhr" | "beacon" | "image" | "ws-send" | "ws-recv";
 
 export type CapturedEvent = {
   id: string;

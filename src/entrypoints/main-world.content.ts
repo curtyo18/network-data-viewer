@@ -1,4 +1,5 @@
 import { encodeBody } from "@/content/encode-body";
+import { installImageCapture } from "@/content/patch-image";
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -181,6 +182,28 @@ export default defineContentScript({
         }
       }
       (window as { WebSocket: typeof WebSocket }).WebSocket = PatchedWS as unknown as typeof WebSocket;
+
+      // --- Image beacons ---
+      // Tracking pixels fire GET beacons via `new Image().src = ...`, bypassing
+      // the patches above. installImageCapture hooks the prototype `src` setter
+      // (with lossless URL dedup) and reports each new http(s) URL. There is no
+      // readable response (cross-origin, no-cors) and no body for a GET — the
+      // payload is in the URL. Ordinary <img> content is harmless noise that no
+      // analyser pattern matches.
+      installImageCapture(HTMLImageElement.prototype, (url) => {
+        send({
+          id: crypto.randomUUID(),
+          ts: Date.now(),
+          source: "image",
+          method: "GET",
+          url,
+          reqHeaders: {},
+          reqBody: null,
+          resStatus: null,
+          resHeaders: {},
+          resBody: null,
+        });
+      }, document.baseURI);
     })();
   },
 });

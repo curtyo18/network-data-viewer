@@ -168,6 +168,39 @@ test("captures sendBeacon to GA4 and renders in side panel", async () => {
   }
 });
 
+test("captures an image-beacon (tracking pixel) to GA4 and renders in side panel", async () => {
+  // Regression guard for the image transport: Meta's fbevents.js and other
+  // pixels fire GET beacons via `new Image().src = ...`, which bypasses the
+  // fetch/XHR/sendBeacon patches. The HTMLImageElement.src hook must capture it.
+  const { ctx, panel, page } = await setupHarness({
+    seed: [{
+      id: "test-image",
+      name: "ImageAnalyser",
+      enabled: true,
+      urlPattern: "google-analytics\\.com/g/collect",
+      dsl: [{ op: "query-parse" }],
+      createdAt: 0
+    }]
+  });
+  try {
+    await ctx.route(/test-fixture\.local/, async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: fixtureHtml });
+    });
+    await ctx.route(/google-analytics\.com\/g\/collect/, async (route) => {
+      // Respond with a 1x1 GIF so the Image load resolves cleanly.
+      await route.fulfill({ status: 200, contentType: "image/gif", body: "GIF89a" });
+    });
+
+    await page.goto("https://test-fixture.local/");
+    await page.click("#fire-image");
+
+    await expect(panel.locator("text=ImageAnalyser").first()).toBeVisible({ timeout: 10000 });
+    await expect(panel.locator("text=G-IMAGE").first()).toBeVisible();
+  } finally {
+    await ctx.close();
+  }
+});
+
 test("settings showRaw toggle is reflected in sandbox analyser output", async () => {
   const { ctx, panel, page } = await setupHarness({
     seed: [{
